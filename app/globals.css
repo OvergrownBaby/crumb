@@ -1,26 +1,333 @@
 @import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #FAF6EE;
+  --background-elev: #FFFCF4;
+  --foreground: #1A1814;
+  --foreground-soft: #3A352D;
+  --muted: #6F665A;
+  --muted-soft: #ECE4D2;
+  --card: #FFFCF4;
+  --border: #E6DBC2;
+  --border-strong: #D6C6A3;
+
+  /* Cinnabar-tinted tomato */
+  --accent: #DA3F2A;
+  --accent-hover: #B83423;
+  --accent-soft: #FCE2DB;
+  --accent-foreground: #FFFFFF;
+
+  /* Secondary warm — saffron */
+  --saffron: #F2A93B;
+  --saffron-soft: #FFE9C2;
+
+  /* Source colors */
+  --source-youtube: #FF0033;
+  --source-tiktok: #111111;
+  --source-reddit: #FF4500;
+  --source-article: #4A4A4A;
+  --source-maps: #1F8E3D;
+  --source-text: #6B6359;
+
+  /* Layered shadows */
+  --shadow-card:
+    0 1px 0 rgba(26, 24, 20, 0.04),
+    0 1px 3px rgba(26, 24, 20, 0.06),
+    0 4px 16px rgba(26, 24, 20, 0.04);
+  --shadow-card-hover:
+    0 1px 0 rgba(26, 24, 20, 0.04),
+    0 2px 6px rgba(26, 24, 20, 0.08),
+    0 12px 28px rgba(218, 63, 42, 0.10);
+  --shadow-pop:
+    0 1px 0 rgba(26, 24, 20, 0.06),
+    0 8px 24px rgba(26, 24, 20, 0.10),
+    0 24px 48px rgba(26, 24, 20, 0.10);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-muted: var(--muted);
+  --color-muted-soft: var(--muted-soft);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-saffron: var(--saffron);
+  --color-saffron-soft: var(--saffron-soft);
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "SF Pro Text", Segoe UI, Roboto, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html,
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01" on, "cv11" on;
+}
+
+/* Paper grain — SVG noise overlay, fixed so it doesn't shift with scroll */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.4  0 0 0 0 0.35  0 0 0 0 0.25  0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 160px 160px;
+}
+
+/* Warm light wash on the page */
+body {
+  background-image:
+    radial-gradient(at 0% 0%, rgba(242, 169, 59, 0.08) 0%, transparent 45%),
+    radial-gradient(at 100% 100%, rgba(218, 63, 42, 0.05) 0%, transparent 50%),
+    radial-gradient(at 95% 0%, rgba(242, 169, 59, 0.04) 0%, transparent 35%);
+}
+
+/* MapLibre tweaks */
+.maplibregl-canvas {
+  outline: none;
+  /* Warm-paper tint so the pins pop, less "google maps" feel */
+  filter: saturate(0.78) hue-rotate(-4deg) brightness(1.02);
+}
+.maplibregl-ctrl-attrib {
+  font-size: 10px !important;
+  opacity: 0.55;
+  font-family: var(--font-sans);
+}
+.maplibregl-ctrl-attrib a { color: inherit !important; }
+.maplibregl-ctrl-group {
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--border) !important;
+}
+
+/* Custom pin */
+.fm-marker {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateY(2px);
+}
+.fm-marker-pin {
+  position: relative;
+  width: 22px;
+  height: 28px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.fm-marker-pin::before {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 4px;
+  background: rgba(26, 24, 20, 0.18);
+  border-radius: 50%;
+  filter: blur(2px);
+}
+.fm-marker-pin-body {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.18),
+    0 0 0 3px white,
+    0 4px 12px rgba(218, 63, 42, 0.35);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.fm-marker-pin-body::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), transparent 60%);
+  pointer-events: none;
+}
+.fm-marker:hover .fm-marker-pin-body {
+  transform: scale(1.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.18),
+    0 0 0 3px white,
+    0 6px 18px rgba(218, 63, 42, 0.5);
+}
+.fm-marker-selected .fm-marker-pin-body {
+  background: white;
+  box-shadow:
+    0 0 0 4px var(--accent),
+    0 0 0 8px rgba(218, 63, 42, 0.18),
+    0 6px 20px rgba(218, 63, 42, 0.5);
+}
+.fm-marker-selected .fm-marker-pin-body::after {
+  background: radial-gradient(circle at 50% 50%, var(--accent) 30%, transparent 32%);
+}
+
+.fm-marker-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 1.5px solid var(--accent);
+  opacity: 0;
+  animation: fm-pulse 2.4s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes fm-pulse {
+  0%   { transform: scale(0.7); opacity: 0; }
+  20%  { opacity: 0.55; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.fm-marker-label {
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--foreground);
+  background: rgba(255, 252, 244, 0.96);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  transform: translateY(-3px);
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--border);
+}
+.fm-marker:hover .fm-marker-label,
+.fm-marker-selected .fm-marker-label {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Utility classes used in components */
+.card-soft {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.card-soft:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Sparkle micro-animation on CTA */
+@keyframes fm-sparkle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  20%      { transform: rotate(-12deg) scale(1.12); }
+  60%      { transform: rotate(8deg) scale(0.95); }
+}
+.fm-sparkle:hover .fm-sparkle-icon {
+  animation: fm-sparkle 0.7s ease-in-out;
+}
+
+/* Avatar rotation */
+.fm-avatar-tilt {
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.fm-avatar-tilt:hover {
+  transform: rotate(-4deg) scale(1.06);
+}
+
+/* Real easings — the ones Linear/Vercel actually use */
+:root {
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-quart: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* Tabular numerals — counts don't jiggle on update */
+.fm-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" on, "ss01" on;
+}
+
+/* Button press feel — used on every interactive primary */
+.fm-btn {
+  transition:
+    transform 0.18s var(--ease-out-quart),
+    background-color 0.18s var(--ease-out-quart),
+    box-shadow 0.18s var(--ease-out-quart),
+    color 0.18s var(--ease-out-quart);
+  -webkit-tap-highlight-color: transparent;
+}
+.fm-btn:active {
+  transform: translateY(1px) scale(0.985);
+  transition-duration: 80ms;
+}
+
+/* Focus ring that matches the brand */
+.fm-focus:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--accent);
+}
+
+/* Magnetic button wrapper — JS sets --mx/--my, CSS does the rest */
+.fm-magnetic {
+  --mx: 0px;
+  --my: 0px;
+  transform: translate(var(--mx), var(--my));
+  transition: transform 0.22s var(--ease-spring);
+  will-change: transform;
+}
+.fm-magnetic[data-active="true"] {
+  transition-duration: 80ms;
+}
+
+/* Subtle entry — fade-up via IntersectionObserver toggle */
+[data-fade-in] {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.6s var(--ease-out-quart), transform 0.6s var(--ease-out-quart);
+}
+[data-fade-in].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Small caps label */
+.fm-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Display heading helper — tight, heavy sans */
+.fm-display {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  font-feature-settings: "ss01" on, "cv11" on;
+}
+.fm-display em {
+  font-style: normal;
+}
+
+/* Soft inner-glow ring */
+.ring-inset-soft {
+  box-shadow: inset 0 0 0 1px rgba(214, 198, 163, 0.45);
 }
