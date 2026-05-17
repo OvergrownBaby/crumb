@@ -37,17 +37,11 @@ export default function OpengraphImage() {
               boxShadow: '0 8px 24px rgba(218,63,42,0.35)',
             }}
           >
-            <svg width="38" height="38" viewBox="0 0 24 24">
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="white">
               <path
-                d="M12 3c-3.6 0-6.5 2.9-6.5 6.5 0 4.6 6 11 6.3 11.3.1.1.3.2.2.2s.1-.1.2-.2c.3-.3 6.3-6.7 6.3-11.3C18.5 5.9 15.6 3 12 3Z"
-                fill="white"
-              />
-              <path
-                d="M8.5 9.3c0 .9 1.6 1.6 3.5 1.6s3.5-.7 3.5-1.6"
-                stroke="#DA3F2A"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-                fill="none"
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M12 2C6.48 2 2 6.48 2 12c0 4 2.5 7 6 8.5L12 23l4-2.5c3.5-1.5 6-4.5 6-8.5 0-5.52-4.48-10-10-10Zm0 5c2 0 3.7 1 4.5 2.6L14 10.7c-.5-.7-1.2-1-2-1-1.4 0-2.5 1-2.5 2.5S10.6 14.7 12 14.7c.8 0 1.5-.3 2-1l2.5 1.1c-.8 1.6-2.5 2.6-4.5 2.6-3 0-5.5-2.5-5.5-5.2C6.5 9.5 9 7 12 7Z"
               />
             </svg>
           </div>

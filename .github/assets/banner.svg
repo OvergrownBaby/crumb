@@ -66,9 +66,9 @@
     <!-- logo glyph -->
     <g transform="translate(0, -10)">
       <rect x="0" y="0" width="56" height="56" rx="14" fill="#DA3F2A"/>
-      <path d="M 28 12 c -8 0 -14.5 6.5 -14.5 14.5 c 0 10.3 14 25 14 25 s 14 -14.7 14 -25 c 0 -8 -6.5 -14.5 -14 -14.5 z" fill="white" fill-opacity="0.96"/>
-      <path d="M 21 27 c 0 2 4 3.5 7 3.5 s 7 -1.5 7 -3.5" stroke="#DA3F2A" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-      <path d="M 24 19 c 0.5 0.6 -0.2 1.2 0 1.8 M 28 18 c 0.5 0.6 -0.2 1.4 0 2 M 32 19 c 0.5 0.6 -0.2 1.2 0 1.8" stroke="#DA3F2A" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.6"/>
+      <g transform="translate(12,8) scale(1.4)" fill="white">
+        <path fill-rule="evenodd" d="M12 2C6.48 2 2 6.48 2 12c0 4 2.5 7 6 8.5L12 23l4-2.5c3.5-1.5 6-4.5 6-8.5 0-5.52-4.48-10-10-10Zm0 5c2 0 3.7 1 4.5 2.6L14 10.7c-.5-.7-1.2-1-2-1-1.4 0-2.5 1-2.5 2.5S10.6 14.7 12 14.7c.8 0 1.5-.3 2-1l2.5 1.1c-.8 1.6-2.5 2.6-4.5 2.6-3 0-5.5-2.5-5.5-5.2C6.5 9.5 9 7 12 7Z"/>
+      </g>
     </g>
 
     <text x="80" y="32" font-family="ui-sans-serif, system-ui, -apple-system" font-size="64" font-weight="800" fill="#1A1814" letter-spacing="-2">Crumb</text>

@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils'
 
 /**
- * Pin + bowl-of-noodles glyph. Solid form with a tiny spoon / chopstick
- * line through it. Sits inside a rounded square chip.
+ * Crumb logo: a map-pin teardrop with a lowercase "c" cut out of its body.
+ * Single closed shape using even-odd fill — works at any size.
  */
 export function LogoMark({ className }: { className?: string }) {
   return (
@@ -13,27 +13,10 @@ export function LogoMark({ className }: { className?: string }) {
         className
       )}
     >
-      <svg viewBox="0 0 24 24" className="w-[60%] h-[60%]" aria-hidden>
-        {/* pin outline */}
+      <svg viewBox="0 0 24 24" className="w-[64%] h-[64%]" aria-hidden fill="currentColor">
         <path
-          d="M12 3c-3.6 0-6.5 2.9-6.5 6.5 0 4.6 6 11 6.3 11.3.1.1.3.2.2.2s.1-.1.2-.2c.3-.3 6.3-6.7 6.3-11.3C18.5 5.9 15.6 3 12 3Z"
-          fill="currentColor"
-        />
-        {/* bowl inside */}
-        <path
-          d="M8.5 9.3c0 .9 1.6 1.6 3.5 1.6s3.5-.7 3.5-1.6"
-          stroke="rgba(0,0,0,0.45)"
-          strokeWidth="1.1"
-          strokeLinecap="round"
-          fill="none"
-        />
-        {/* steam squiggle */}
-        <path
-          d="M10.5 6.1c.3.4-.2.8 0 1.2M12 5.5c.3.4-.2.9 0 1.4M13.5 6.1c.3.4-.2.8 0 1.2"
-          stroke="rgba(255,255,255,0.85)"
-          strokeWidth="0.9"
-          strokeLinecap="round"
-          fill="none"
+          fillRule="evenodd"
+          d="M12 2C6.48 2 2 6.48 2 12c0 4 2.5 7 6 8.5L12 23l4-2.5c3.5-1.5 6-4.5 6-8.5 0-5.52-4.48-10-10-10Zm0 5c2 0 3.7 1 4.5 2.6L14 10.7c-.5-.7-1.2-1-2-1-1.4 0-2.5 1-2.5 2.5S10.6 14.7 12 14.7c.8 0 1.5-.3 2-1l2.5 1.1c-.8 1.6-2.5 2.6-4.5 2.6-3 0-5.5-2.5-5.5-5.2C6.5 9.5 9 7 12 7Z"
         />
       </svg>
     </span>
