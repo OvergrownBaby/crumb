@@ -4,7 +4,8 @@ import { AtlasMap } from '@/components/atlas-map'
 import { CreatorAvatar } from '@/components/creator-avatar'
 import { SourceBadge } from '@/components/source-badge'
 import { RestaurantCard } from '@/components/restaurant-card'
-import { ArrowRight, Plus } from 'lucide-react'
+import { SubmitForm } from '@/components/submit-form'
+import { ArrowRight } from 'lucide-react'
 import { GithubIcon } from '@/components/icons'
 
 export default async function HomePage() {
@@ -19,39 +20,44 @@ export default async function HomePage() {
 
   return (
     <div className="flex-1">
-      {/* Hero — single column, content-first */}
+      {/* Hero — composer-first. The product IS the page. */}
       <section className="mx-auto max-w-5xl px-4 sm:px-6 pt-14 lg:pt-20 pb-10">
-        <p className="fm-label">A weekend project</p>
+        <p className="fm-label">A weekend project · open source</p>
         <h1 className="mt-3 fm-display text-3xl sm:text-4xl lg:text-5xl leading-[1.05] max-w-3xl">
           A community map of restaurants recommended by food creators.
         </h1>
         <p className="mt-5 text-[var(--muted)] max-w-2xl leading-relaxed">
-          Drop a Mark Wiens video, a TikTok, a Reddit thread, an Eater list. Gemini watches /
-          reads it, Google Places pins the spots, and every pin links back to the exact
-          quote &amp; timestamp.{' '}
-          <Link href="/atlas" className="text-[var(--foreground)] underline decoration-[var(--accent)] decoration-2 underline-offset-2 hover:text-[var(--accent)]">
-            Browse the atlas
+          Drop a Mark Wiens video, a TikTok, a Reddit thread, an Eater list — and the AI
+          watches or reads it, pins every restaurant on a map, with the exact quote and
+          timestamp. Try it now.{' '}
+          <Link
+            href="/atlas"
+            className="text-[var(--foreground)] underline decoration-[var(--accent)] decoration-2 underline-offset-2 hover:text-[var(--accent)]"
+          >
+            Or browse the atlas
           </Link>
           .
         </p>
 
-        <div className="mt-6 flex flex-wrap items-center gap-2">
-          <Link
-            href="/submit"
-            className="fm-btn fm-focus inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-[var(--foreground)] text-[var(--background)] hover:bg-[var(--accent)] font-medium text-sm"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add a link
-          </Link>
+        {/* The composer — front and center */}
+        <div className="mt-8">
+          <SubmitForm />
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[var(--muted)]">
           <a
             href="https://github.com/OvergrownBaby/crumb"
             target="_blank"
             rel="noreferrer"
-            className="fm-btn fm-focus inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-[var(--border-strong)] hover:bg-[var(--muted-soft)] text-sm font-medium"
+            className="inline-flex items-center gap-1.5 hover:text-[var(--accent)]"
           >
-            <GithubIcon className="w-3.5 h-3.5" />
-            Source
+            <GithubIcon className="w-3 h-3" />
+            <span>github.com/OvergrownBaby/crumb</span>
           </a>
+          <span className="opacity-50">·</span>
+          <span>AGPL v3</span>
+          <span className="opacity-50">·</span>
+          <span>no tracking · no ads · no subscription</span>
         </div>
       </section>
 
