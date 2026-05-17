@@ -13,7 +13,7 @@ export function SiteFooter() {
             forgetting where Mark Wiens told me to eat.
           </p>
           <div className="mt-3 fm-label">
-            MIT &middot; no tracking &middot; no ads &middot; no subscription
+            AGPL v3 &middot; no tracking &middot; no ads &middot; no subscription
           </div>
         </div>
 
