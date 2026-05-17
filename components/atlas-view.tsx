@@ -1,54 +1,67 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import type { Restaurant, Mention, Creator, SourceKind } from '@/lib/types'
+import { useEffect, useMemo, useState } from 'react'
+import type { Restaurant, Mention, Creator } from '@/lib/types'
 import { AtlasMap } from './atlas-map'
 import { CreatorAvatar } from './creator-avatar'
 import { SourceBadge } from './source-badge'
 import { formatTimestamp, priceDots, cn } from '@/lib/utils'
-import { X, MapPin, ExternalLink, Filter } from 'lucide-react'
+import { X, MapPin, ExternalLink, Loader2 } from 'lucide-react'
 
 type Props = {
   restaurants: Restaurant[]
-  mentions: Mention[]
   creators: Creator[]
 }
 
-const ALL_SOURCE_KINDS: SourceKind[] = [
-  'youtube',
-  'tiktok',
-  'reddit',
-  'article',
-  'maps_list',
-  'text_paste',
-]
-
-export function AtlasView({ restaurants, mentions, creators }: Props) {
+export function AtlasView({ restaurants, creators }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [activeCreator, setActiveCreator] = useState<string | null>(null)
-  const [activeSources, setActiveSources] = useState<SourceKind[]>(ALL_SOURCE_KINDS)
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [selectedMentions, setSelectedMentions] = useState<Mention[]>([])
+  const [loadingMentions, setLoadingMentions] = useState(false)
 
+  // Source filter — we don't have mentions on the client until pin click,
+  // so source filtering happens on a separate fetch path. For now: only
+  // creator filtering is reactive; source filter is hidden until v2.
   const filtered = useMemo(() => {
     return restaurants.filter((r) => {
       if (activeCreator && !r.topCreators.some((c) => c.slug === activeCreator)) {
         return false
       }
-      const restaurantMentions = mentions.filter((m) => m.restaurantId === r.id)
-      if (restaurantMentions.length === 0) return true
-      return restaurantMentions.some((m) => activeSources.includes(m.source.kind))
+      return true
     })
-  }, [restaurants, mentions, activeCreator, activeSources])
+  }, [restaurants, activeCreator])
 
-  // Clear selection if it falls out of filters — derive instead of effect
   const effectiveSelectedId =
     selectedId && filtered.some((r) => r.id === selectedId) ? selectedId : null
   const selected = effectiveSelectedId
     ? filtered.find((r) => r.id === effectiveSelectedId) ?? null
     : null
-  const selectedMentions = selected
-    ? mentions.filter((m) => m.restaurantId === selected.id)
-    : []
+
+  // Lazy-fetch mentions when a pin is selected
+  useEffect(() => {
+    if (!effectiveSelectedId) return
+    let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoadingMentions(true)
+    fetch(`/api/place/${effectiveSelectedId}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { mentions?: Mention[] } | null) => {
+        if (cancelled) return
+        setSelectedMentions(data?.mentions ?? [])
+        setLoadingMentions(false)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setSelectedMentions([])
+        setLoadingMentions(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [effectiveSelectedId])
+
+  // Reset mentions when selection clears (derive-not-effect would mix state and async fetch awkwardly).
+  const visibleMentions = effectiveSelectedId ? selectedMentions : []
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row min-h-0">
@@ -110,42 +123,6 @@ export function AtlasView({ restaurants, mentions, creators }: Props) {
               ))}
           </div>
 
-          <button
-            onClick={() => setFiltersOpen((v) => !v)}
-            className="flex items-center gap-1 text-xs text-[var(--muted)] hover:text-[var(--foreground)]"
-          >
-            <Filter className="w-3 h-3" />
-            {filtersOpen ? 'Hide' : 'More'} filters
-          </button>
-
-          {filtersOpen && (
-            <div className="pt-2 space-y-2">
-              <div className="fm-label">Source</div>
-              <div className="flex flex-wrap gap-1.5">
-                {ALL_SOURCE_KINDS.map((kind) => {
-                  const on = activeSources.includes(kind)
-                  return (
-                    <button
-                      key={kind}
-                      onClick={() =>
-                        setActiveSources(
-                          on
-                            ? activeSources.filter((k) => k !== kind)
-                            : [...activeSources, kind]
-                        )
-                      }
-                      className={cn(
-                        'transition',
-                        !on && 'opacity-40 hover:opacity-80'
-                      )}
-                    >
-                      <SourceBadge kind={kind} />
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Restaurant list */}
@@ -207,7 +184,8 @@ export function AtlasView({ restaurants, mentions, creators }: Props) {
         {selected && (
           <DetailPanel
             restaurant={selected}
-            mentions={selectedMentions}
+            mentions={visibleMentions}
+            loading={loadingMentions}
             onClose={() => setSelectedId(null)}
           />
         )}
@@ -219,10 +197,12 @@ export function AtlasView({ restaurants, mentions, creators }: Props) {
 function DetailPanel({
   restaurant,
   mentions,
+  loading,
   onClose,
 }: {
   restaurant: Restaurant
   mentions: Mention[]
+  loading: boolean
   onClose: () => void
 }) {
   const ytMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -259,6 +239,16 @@ function DetailPanel({
       </div>
 
       <div className="flex-1 overflow-y-auto">
+        {loading && mentions.length === 0 ? (
+          <div className="flex items-center justify-center py-12 text-[var(--muted)]">
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            <span className="text-sm">Loading mentions…</span>
+          </div>
+        ) : !loading && mentions.length === 0 ? (
+          <div className="p-6 text-sm text-[var(--muted)] italic">
+            No mentions found for this place.
+          </div>
+        ) : null}
         <ul className="divide-y divide-[var(--border)]">
           {mentions.map((m) => (
             <li key={m.id} className="p-4">
