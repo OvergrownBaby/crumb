@@ -14,10 +14,43 @@ const mono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://crumb-vert.vercel.app";
+
 export const metadata: Metadata = {
-  title: "Crumb — restaurants from the people you trust",
+  metadataBase: new URL(SITE),
+  title: {
+    default: "Crumb — restaurants from the people you trust",
+    template: "%s — Crumb",
+  },
   description:
-    "Drop any link with a restaurant in it. Get it pinned on a map alongside everything Mark Wiens and friends recommend.",
+    "Drop any YouTube, TikTok, Reddit or article link. The AI watches it, finds every restaurant mentioned, drops them on a map — with verbatim quotes and timestamps.",
+  applicationName: "Crumb",
+  authors: [{ name: "OvergrownBaby", url: "https://github.com/OvergrownBaby" }],
+  keywords: [
+    "restaurants",
+    "food map",
+    "food creators",
+    "Mark Wiens",
+    "food discovery",
+    "TikTok restaurant map",
+    "YouTube restaurant extractor",
+  ],
+  openGraph: {
+    type: "website",
+    url: SITE,
+    siteName: "Crumb",
+    title: "Crumb — restaurants from the people you trust",
+    description:
+      "Drop a video link. The AI watches it. Every restaurant pinned with a verbatim quote and a timestamp.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Crumb — restaurants from the people you trust",
+    description:
+      "Drop a video link. The AI watches it. Every restaurant pinned with a verbatim quote and a timestamp.",
+    creator: "@OvergrownBaby",
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({

@@ -6,6 +6,12 @@ export const runtime = 'nodejs'
 // Long-running: video extraction can take 30-90s
 export const maxDuration = 300
 
+// Rate limit guardrails — set generously enough for genuine use,
+// tight enough to bound cost-griefing.
+const PER_IP_PER_HOUR = 5
+const PROJECT_PER_HOUR = 30
+const PROJECT_PER_DAY = 200
+
 export async function POST(req: Request) {
   let url: string
   try {
@@ -18,13 +24,53 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'invalid json body' }, { status: 400 })
   }
 
-  // Create job row up front so the UI can show progress
   const sb = supabaseAdmin()
   const ip =
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     req.headers.get('x-real-ip') ||
     null
 
+  // Rate limiting — check before doing any expensive work
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+  if (ip) {
+    const { count: perIp } = await sb
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_ip', ip)
+      .gte('created_at', oneHourAgo)
+    if ((perIp ?? 0) >= PER_IP_PER_HOUR) {
+      return NextResponse.json(
+        { error: `Rate limit: ${PER_IP_PER_HOUR} submissions per hour. Try again later.` },
+        { status: 429 }
+      )
+    }
+  }
+
+  const { count: hourly } = await sb
+    .from('jobs')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', oneHourAgo)
+  if ((hourly ?? 0) >= PROJECT_PER_HOUR) {
+    return NextResponse.json(
+      { error: 'Crumb is busy right now — too many submissions in the last hour. Try again in a bit.' },
+      { status: 429 }
+    )
+  }
+
+  const { count: daily } = await sb
+    .from('jobs')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', oneDayAgo)
+  if ((daily ?? 0) >= PROJECT_PER_DAY) {
+    return NextResponse.json(
+      { error: 'Crumb has hit its daily limit. Submissions reopen tomorrow.' },
+      { status: 429 }
+    )
+  }
+
+  // Create job row up front so the UI can show progress
   const { data: job, error: jobErr } = await sb
     .from('jobs')
     .insert({ url, status: 'fetching', user_ip: ip })
