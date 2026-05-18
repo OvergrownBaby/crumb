@@ -1,186 +1,74 @@
 import Link from 'next/link'
-import { getAtlas, listCreators } from '@/lib/data'
-import { AtlasMap } from '@/components/atlas-map'
-import { CreatorAvatar } from '@/components/creator-avatar'
-import { SourceBadge } from '@/components/source-badge'
-import { RestaurantCard } from '@/components/restaurant-card'
 import { SubmitForm } from '@/components/submit-form'
-import { ArrowRight } from 'lucide-react'
+import { RotatingText } from '@/components/rotating-text'
+import { ListCard } from '@/components/list-card'
 import { GithubIcon } from '@/components/icons'
+import { getCuratedLists } from '@/lib/lists'
+
+export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  const [restaurants, creators] = await Promise.all([getAtlas(), listCreators()])
-  const recentRestaurants = restaurants.slice(0, 6)
-  const stats = {
-    restaurants: restaurants.length,
-    videos: creators.reduce((s, c) => s + c.videoCount, 0),
-    creators: creators.filter((c) => c.restaurantCount > 0).length,
-    cities: new Set(restaurants.map((r) => `${r.city}|${r.country}`)).size,
-  }
+  const lists = await getCuratedLists(12)
 
   return (
     <div className="flex-1">
-      {/* Hero — composer-first. The product IS the page. */}
-      <section className="mx-auto max-w-5xl px-4 sm:px-6 pt-14 lg:pt-20 pb-10">
-        <p className="fm-label">A weekend project · open source</p>
-        <h1 className="mt-3 fm-display text-3xl sm:text-4xl lg:text-5xl leading-[1.05] max-w-3xl">
-          A community map of restaurants recommended by food creators.
+      {/* Hero — composer-first, single voice */}
+      <section className="mx-auto max-w-4xl px-4 sm:px-6 pt-16 pb-12 lg:pt-24 lg:pb-16">
+        <h1 className="fm-display text-[40px] sm:text-5xl lg:text-6xl leading-[1.0] -tracking-[0.03em]">
+          Restaurants from <RotatingText /> you actually trust.
         </h1>
-        <p className="mt-5 text-[var(--muted)] max-w-2xl leading-relaxed">
-          Drop a Mark Wiens video, a TikTok, a Reddit thread, an Eater list — and the AI
-          watches or reads it, pins every restaurant on a map, with the exact quote and
-          timestamp. Try it now.{' '}
-          <Link
-            href="/atlas"
-            className="text-[var(--foreground)] underline decoration-[var(--accent)] decoration-2 underline-offset-2 hover:text-[var(--accent)]"
-          >
-            Or browse the atlas
-          </Link>
-          .
+        <p className="mt-5 text-[var(--muted)] max-w-xl leading-relaxed">
+          Drop a YouTube link, a TikTok, a Reddit thread, an Eater list. The AI watches
+          or reads it, finds every restaurant, drops them on a map with the verbatim quote.
         </p>
 
-        {/* The composer — front and center */}
         <div className="mt-8">
           <SubmitForm />
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[var(--muted)]">
+        <div className="mt-5 flex items-center gap-x-3 gap-y-1 text-[11px] text-[var(--muted)] flex-wrap">
           <a
             href="https://github.com/OvergrownBaby/crumb"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 hover:text-[var(--accent)]"
+            className="inline-flex items-center gap-1 hover:text-[var(--accent)]"
           >
             <GithubIcon className="w-3 h-3" />
-            <span>github.com/OvergrownBaby/crumb</span>
+            <span>open source</span>
           </a>
-          <span className="opacity-50">·</span>
-          <span>AGPL v3</span>
-          <span className="opacity-50">·</span>
-          <span>no tracking · no ads · no subscription</span>
+          <span className="opacity-40">·</span>
+          <span>agpl-3.0</span>
+          <span className="opacity-40">·</span>
+          <span>no tracking, no ads, no subscription</span>
         </div>
       </section>
 
-      {/* Stat strip — let the data brag */}
-      <section className="border-y border-[var(--border)] bg-[var(--background-elev)]/60">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-5 grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-6 text-sm">
-          <Stat n={stats.restaurants} label="restaurants" />
-          <Stat n={stats.videos} label="videos parsed" />
-          <Stat n={stats.creators} label="creators" />
-          <Stat n={stats.cities} label={stats.cities === 1 ? 'city' : 'cities'} />
-        </div>
-      </section>
-
-      {/* The map — the product, not a marketing screenshot */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 py-10">
-        <div className="flex items-end justify-between mb-3">
-          <div>
-            <p className="fm-label">All pins</p>
-            <h2 className="font-bold text-xl mt-0.5">
-              Everywhere we&apos;ve got data
-            </h2>
+      {/* Lists by people — the browse hook */}
+      {lists.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 py-10 lg:py-14 border-t border-[var(--border)]">
+          <div className="flex items-end justify-between mb-6 max-w-4xl">
+            <div>
+              <h2 className="text-2xl font-bold -tracking-[0.01em]">Lists from the people</h2>
+              <p className="text-sm text-[var(--muted)] mt-1 max-w-md">
+                Each is a city someone you trust has eaten through. Open one to see what
+                they said about each place.
+              </p>
+            </div>
+            <Link
+              href="/atlas"
+              className="text-sm font-medium text-[var(--foreground-soft)] hover:text-[var(--accent)] hidden sm:inline-flex items-center gap-1"
+            >
+              all on a map →
+            </Link>
           </div>
-          <Link
-            href="/atlas"
-            className="text-sm font-medium text-[var(--foreground-soft)] hover:text-[var(--accent)] inline-flex items-center gap-1"
-          >
-            Open atlas <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-        <div className="relative h-[420px] lg:h-[520px] rounded-lg overflow-hidden border border-[var(--border-strong)] bg-[var(--muted-soft)]">
-          <AtlasMap
-            restaurants={restaurants}
-            interactive={true}
-            center={[114.17, 22.32]}
-            zoom={10.5}
-            className="absolute inset-0"
-          />
-        </div>
-      </section>
 
-      {/* Sources supported — info-dense */}
-      <section className="mx-auto max-w-5xl px-4 sm:px-6 py-10 border-t border-[var(--border)]">
-        <p className="fm-label">Inputs</p>
-        <h2 className="font-bold text-xl mt-0.5">Sources that work</h2>
-        <p className="mt-1 text-sm text-[var(--muted)] max-w-2xl">
-          Anything you can paste a URL to. Long-form videos are extracted with Gemini
-          multimodal (it watches storefront signs and menu boards, not just transcripts).
-          Articles use Readability + Claude. Geocoding via Google Places, cached aggressively.
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <SourceBadge kind="youtube" />
-          <SourceBadge kind="tiktok" />
-          <SourceBadge kind="reddit" />
-          <SourceBadge kind="article" />
-          <SourceBadge kind="maps_list" />
-          <SourceBadge kind="text_paste" />
-        </div>
-      </section>
-
-      {/* Creators — small + dense, not marketing cards */}
-      <section className="mx-auto max-w-5xl px-4 sm:px-6 py-10 border-t border-[var(--border)]">
-        <p className="fm-label">Sourced from</p>
-        <h2 className="font-bold text-xl mt-0.5">Creators</h2>
-        <ul className="mt-4 divide-y divide-[var(--border)] border border-[var(--border)] rounded-lg overflow-hidden bg-[var(--background-elev)]">
-          {creators.map((c) => (
-            <li key={c.slug}>
-              <Link
-                href={`/c/${c.slug}`}
-                className="fm-btn flex items-center gap-3 px-4 py-3 hover:bg-[var(--muted-soft)]"
-              >
-                <CreatorAvatar creator={c} size="md" link={false} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{c.name}</div>
-                  <div className="fm-label !text-[10px]">{c.platform}</div>
-                </div>
-                <div className="text-right text-xs text-[var(--muted)] fm-num">
-                  {c.restaurantCount > 0 ? (
-                    <>
-                      <span className="font-semibold text-[var(--foreground)]">
-                        {c.restaurantCount}
-                      </span>{' '}
-                      pins · {c.videoCount} videos
-                    </>
-                  ) : (
-                    <span className="italic">no pins yet</span>
-                  )}
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-[var(--muted)] shrink-0" />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* Recent pins — dense grid, not marketing card */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 py-10 border-t border-[var(--border)]">
-        <div className="flex items-end justify-between mb-4">
-          <div>
-            <p className="fm-label">Recently added</p>
-            <h2 className="font-bold text-xl mt-0.5">Latest pins</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {lists.map((l) => (
+              <ListCard key={`${l.creatorSlug}-${l.city}`} list={l} />
+            ))}
           </div>
-          <Link
-            href="/atlas"
-            className="text-sm font-medium text-[var(--foreground-soft)] hover:text-[var(--accent)] inline-flex items-center gap-1"
-          >
-            All <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {recentRestaurants.map((r) => (
-            <RestaurantCard key={r.id} restaurant={r} />
-          ))}
-        </div>
-      </section>
-    </div>
-  )
-}
-
-function Stat({ n, label }: { n: number; label: string }) {
-  return (
-    <div>
-      <div className="fm-display fm-num text-2xl leading-none">{n.toLocaleString()}</div>
-      <div className="fm-label mt-1.5">{label}</div>
+        </section>
+      )}
     </div>
   )
 }
