@@ -1,72 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import type { SourceKind } from '@/lib/types'
-import { SourceBadge } from './source-badge'
-import { Loader2, Sparkles, Link as LinkIcon, X, ExternalLink, ArrowRight, Key } from 'lucide-react'
-import { cn, formatTimestamp } from '@/lib/utils'
-import { AtlasMap } from './atlas-map'
-import { photoUrl } from '@/lib/photo'
-import type { Restaurant } from '@/lib/types'
+import { Loader2, Sparkles, Link as LinkIcon, Key } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { ByokModal } from './byok-modal'
+import { LiveExtractionView } from './live-extraction-view'
 import { getStoredKey } from '@/lib/byok'
-
-type Stage = 'idle' | 'fetching' | 'extracting' | 'geocoding' | 'done' | 'failed'
-
-const STAGES: Array<{ key: Stage; label: string; sub: string }> = [
-  { key: 'fetching', label: 'Fetching', sub: 'Loading the video / article…' },
-  { key: 'extracting', label: 'Reading', sub: 'AI is watching and listening…' },
-  { key: 'geocoding', label: 'Mapping', sub: 'Finding each place on the map…' },
-  { key: 'done', label: 'Done', sub: 'Pins added to the atlas' },
-]
-
-type ResultRestaurant = {
-  id: string
-  name: string
-  nameLocal?: string
-  city: string
-  country: string
-  cuisine?: string
-  priceLevel?: number
-  lat: number
-  lng: number
-  photoName?: string
-}
-
-type ResultMention = {
-  id: string
-  restaurant_id: string
-  dish: string | null
-  quote: string
-  timestamp_sec: number | null
-  restaurants: {
-    id: string
-    name: string
-    name_local: string | null
-    city: string
-    country: string
-    cuisine: string | null
-    price_level: number | null
-    lat: number
-    lng: number
-    photo_name: string | null
-  } | null
-}
-
-type ExtractResponse = {
-  jobId?: string
-  videoId?: string
-  restaurantsAdded?: number
-  mentionsAdded?: number
-  skippedNoGeocode?: number
-  mentions?: ResultMention[]
-  error?: string
-}
+import { useStreamExtract } from '@/lib/use-stream-extract'
 
 const PRESETS: Array<{ label: string; url: string }> = [
   {
-    label: "Mark Wiens · HK typhoon crab",
+    label: 'Mark Wiens · HK typhoon crab',
     url: 'https://www.youtube.com/watch?v=z-iAddtjM7A',
   },
   {
@@ -85,117 +29,28 @@ export function SubmitForm({
   showPresets?: boolean
 } = {}) {
   const [url, setUrl] = useState('')
-  const [stage, setStage] = useState<Stage>('idle')
-  const [error, setError] = useState<string | null>(null)
   const [keyModalOpen, setKeyModalOpen] = useState(false)
   const [hasUserKey, setHasUserKey] = useState(false)
-  const [result, setResult] = useState<{
-    sourceUrl: string
-    sourceKind: SourceKind
-    creatorName?: string
-    restaurants: ResultRestaurant[]
-    mentions: Array<{
-      id: string
-      restaurantId: string
-      dish?: string
-      quote: string
-      timestampSec?: number
-    }>
-  } | null>(null)
+  const { state, submit, reset } = useStreamExtract()
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasUserKey(!!getStoredKey())
   }, [])
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!url.trim()) return
-    setError(null)
-    setResult(null)
-
-    // Optimistic progress UX while the (potentially long) API call runs.
-    setStage('fetching')
-
-    try {
-      // Bump through stages on a timer so the user sees movement even though
-      // the backend completes them all in one call. The real one finishes
-      // at the API response.
-      const stageTimer = stepStages(setStage)
-
-      const headers: Record<string, string> = { 'content-type': 'application/json' }
-      const byok = getStoredKey()
-      if (byok) headers['x-gemini-key'] = byok
-
-      const res = await fetch('/api/extract', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ url }),
-      })
-
-      stageTimer.cancel()
-
-      const body = (await res.json()) as ExtractResponse
-
-      if (!res.ok || body.error) {
-        setStage('failed')
-        setError(body.error ?? `Request failed (${res.status})`)
-        return
-      }
-
-      const mentions = (body.mentions ?? []).filter((m): m is ResultMention & {
-        restaurants: NonNullable<ResultMention['restaurants']>
-      } => m.restaurants !== null)
-
-      const restaurants: ResultRestaurant[] = mentions.map((m) => ({
-        id: m.restaurants.id,
-        name: m.restaurants.name,
-        nameLocal: m.restaurants.name_local ?? undefined,
-        city: m.restaurants.city,
-        country: m.restaurants.country,
-        cuisine: m.restaurants.cuisine ?? undefined,
-        priceLevel: m.restaurants.price_level ?? undefined,
-        lat: m.restaurants.lat,
-        lng: m.restaurants.lng,
-        photoName: m.restaurants.photo_name ?? undefined,
-      }))
-
-      const ms = mentions.map((m) => ({
-        id: m.id,
-        restaurantId: m.restaurant_id,
-        dish: m.dish ?? undefined,
-        quote: m.quote,
-        timestampSec: m.timestamp_sec ?? undefined,
-      }))
-
-      // Best-effort source kind inference from URL
-      const sourceKind: SourceKind = /youtube\.com|youtu\.be/.test(url)
-        ? 'youtube'
-        : /reddit\.com/.test(url)
-          ? 'reddit'
-          : 'article'
-
-      setResult({
-        sourceUrl: url,
-        sourceKind,
-        restaurants,
-        mentions: ms,
-      })
-      setStage('done')
-    } catch (err) {
-      setStage('failed')
-      setError(err instanceof Error ? err.message : 'Something went wrong')
-    }
+    submit(url.trim(), getStoredKey())
   }
 
-  function reset() {
-    setStage('idle')
-    setResult(null)
-    setError(null)
+  function handleReset() {
+    reset()
     setUrl('')
   }
 
-  const busy = stage !== 'idle' && stage !== 'done' && stage !== 'failed'
+  const busy = state.status !== 'idle' && state.status !== 'complete' && state.status !== 'failed'
+  const showLive = state.status !== 'idle'
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -242,7 +97,7 @@ export function SubmitForm({
           </button>
         </div>
 
-        {showPresets && !busy && stage !== 'done' && (
+        {showPresets && state.status === 'idle' && (
           <div className="mt-3 flex items-center flex-wrap gap-2">
             <span className="text-[11px] text-[var(--muted)] uppercase tracking-wider font-medium">
               try:
@@ -286,266 +141,7 @@ export function SubmitForm({
         onChange={setHasUserKey}
       />
 
-      {(busy || stage === 'done' || stage === 'failed') && (
-        <div className="mt-6 bg-white rounded-2xl border border-[var(--border)] p-5">
-          {/* Single 4-stage progress bar */}
-          <div className="relative flex h-2 rounded-full overflow-hidden bg-[var(--muted-soft)]">
-            {STAGES.map((s, i) => {
-              const idx = stageIndex(s.key)
-              const current = stage === s.key
-              const reached = stageIndex(stage) > idx
-              return (
-                <div
-                  key={s.key}
-                  className={cn(
-                    'flex-1 relative',
-                    i > 0 && 'border-l-2 border-[var(--card)]',
-                    reached && 'bg-[var(--accent)]',
-                    current && 'bg-[var(--accent)]/20'
-                  )}
-                >
-                  {current && (
-                    <div className="absolute inset-0 fm-indeterminate-bar" />
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Labels under each segment */}
-          <div className="mt-3 grid grid-cols-4 gap-2">
-            {STAGES.map((s) => {
-              const current = stage === s.key
-              const reached = stageIndex(stage) > stageIndex(s.key)
-              const active = current || reached
-              return (
-                <div key={s.key} className="text-center">
-                  <div
-                    className={cn(
-                      'text-[10px] uppercase tracking-wider font-semibold',
-                      current
-                        ? 'text-[var(--accent)]'
-                        : active
-                          ? 'text-[var(--foreground)]'
-                          : 'text-[var(--muted)]'
-                    )}
-                  >
-                    {s.label}
-                  </div>
-                  <div
-                    className={cn(
-                      'text-[11px] mt-0.5 transition',
-                      current ? 'text-[var(--muted)]' : 'text-[var(--muted)] opacity-60'
-                    )}
-                  >
-                    {current ? s.sub : ''}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {stage === 'failed' && (
-            <div className="mt-4 flex items-start gap-2 text-sm text-red-700">
-              <X className="w-4 h-4 mt-0.5 shrink-0" />
-              <div>
-                <div className="font-medium">Failed</div>
-                <div className="text-xs">{error ?? 'Something went wrong'}</div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {stage === 'done' && result && (
-        <ResultView result={result} onReset={reset} />
-      )}
+      {showLive && <LiveExtractionView state={state} onReset={handleReset} />}
     </div>
   )
-}
-
-function ResultView({
-  result,
-  onReset,
-}: {
-  result: {
-    sourceUrl: string
-    sourceKind: SourceKind
-    restaurants: ResultRestaurant[]
-    mentions: Array<{
-      id: string
-      restaurantId: string
-      dish?: string
-      quote: string
-      timestampSec?: number
-    }>
-  }
-  onReset: () => void
-}) {
-  // Order restaurants by their first-mention timestamp so the polyline is
-  // "the tour the creator took us on."
-  const tsById = new Map(result.mentions.map((m) => [m.restaurantId, m.timestampSec ?? 1e9]))
-  const ordered = [...result.restaurants].sort(
-    (a, b) => (tsById.get(a.id) ?? 1e9) - (tsById.get(b.id) ?? 1e9)
-  )
-
-  const mapRestaurants: Restaurant[] = ordered.map((r) => ({
-    id: r.id,
-    name: r.name,
-    nameLocal: r.nameLocal,
-    city: r.city,
-    country: r.country,
-    lat: r.lat,
-    lng: r.lng,
-    cuisine: r.cuisine,
-    priceLevel: r.priceLevel as 1 | 2 | 3 | 4 | undefined,
-    photoName: r.photoName,
-    mentionCount: 1,
-    topCreators: [],
-  }))
-  const routeOrder = ordered.map((r) => r.id)
-
-  return (
-    <div className="mt-8 bg-white rounded-2xl border border-[var(--border)] p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="font-bold text-lg">
-            Added {result.restaurants.length}{' '}
-            {result.restaurants.length === 1 ? 'restaurant' : 'restaurants'}
-          </h2>
-          <p className="text-sm text-[var(--muted)]">Live on the atlas.</p>
-        </div>
-        <button
-          onClick={onReset}
-          className="fm-btn text-sm text-[var(--muted)] hover:text-[var(--foreground)]"
-        >
-          Add another
-        </button>
-      </div>
-
-      {result.restaurants.length === 0 ? (
-        <p className="text-sm text-[var(--muted)] italic">
-          Nothing extracted — either no restaurants were mentioned, or the AI couldn&apos;t
-          find verbatim quotes to back them up.
-        </p>
-      ) : (
-        <>
-          <div className="rounded-xl overflow-hidden border border-[var(--border)] h-[300px] sm:h-[360px] bg-[var(--muted-soft)] mb-4">
-            <AtlasMap
-              restaurants={mapRestaurants}
-              routeOrder={routeOrder}
-              numbered={true}
-              className="w-full h-full"
-            />
-          </div>
-
-          <ol className="space-y-2">
-            {ordered.map((r, idx) => {
-              const m = result.mentions.find((m) => m.restaurantId === r.id)
-              const ts = m?.timestampSec
-              const videoUrlWithTime =
-                ts != null && result.sourceKind === 'youtube'
-                  ? `${result.sourceUrl}&t=${Math.floor(ts)}s`
-                  : result.sourceUrl
-              const photo = photoUrl(r.photoName, 200)
-              return (
-                <li
-                  key={r.id}
-                  className="flex items-stretch gap-3 p-3 rounded-xl border border-[var(--border)] hover:border-[var(--accent)]/40 transition bg-white"
-                >
-                  {photo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={photo}
-                      alt={r.name}
-                      className="w-16 h-16 rounded-lg object-cover bg-[var(--muted-soft)] shrink-0"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-lg bg-[var(--muted-soft)] shrink-0 flex items-center justify-center text-xl">
-                      📍
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--accent)] text-white text-[10px] font-bold fm-num">
-                        {idx + 1}
-                      </span>
-                      <Link
-                        href={`/p/${r.id}`}
-                        className="font-semibold hover:text-[var(--accent)] transition"
-                      >
-                        {r.name}
-                      </Link>
-                      {r.nameLocal && (
-                        <span className="text-xs text-[var(--muted)]">{r.nameLocal}</span>
-                      )}
-                    </div>
-                    <div className="text-xs text-[var(--muted)] mt-0.5">
-                      {r.cuisine}
-                      {r.cuisine && ' · '}
-                      {r.city}
-                    </div>
-                    {m && (
-                      <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-                        <SourceBadge kind={result.sourceKind} size="sm" />
-                        <a
-                          href={videoUrlWithTime}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-xs font-medium text-[var(--accent)] hover:underline"
-                        >
-                          {ts != null && (
-                            <span className="font-mono">{formatTimestamp(ts)}</span>
-                          )}
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                        <span className="text-xs text-[var(--muted)] italic truncate flex-1 min-w-0">
-                          &ldquo;{m.quote.slice(0, 80)}
-                          {m.quote.length > 80 ? '…' : ''}&rdquo;
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </li>
-              )
-            })}
-          </ol>
-        </>
-      )}
-
-      <div className="mt-5 flex gap-2">
-        <Link
-          href="/atlas"
-          className="fm-btn flex-1 inline-flex items-center justify-center gap-1.5 bg-[var(--foreground)] text-[var(--background)] font-semibold py-3 rounded-xl hover:bg-[var(--accent)]"
-        >
-          View on atlas
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-        <button
-          onClick={onReset}
-          className="fm-btn px-5 py-3 rounded-xl border border-[var(--border)] hover:border-[var(--foreground)] text-sm font-semibold"
-        >
-          Add another
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function stageIndex(s: Stage): number {
-  const order: Stage[] = ['idle', 'fetching', 'extracting', 'geocoding', 'done']
-  return order.indexOf(s)
-}
-
-// Step the visible stage forward on a timer, so the user sees movement
-// even though the API call is doing everything in one shot.
-function stepStages(setStage: (s: Stage) => void) {
-  const t1 = setTimeout(() => setStage('extracting'), 2_500)
-  const t2 = setTimeout(() => setStage('geocoding'), 30_000)
-  return {
-    cancel: () => {
-      clearTimeout(t1)
-      clearTimeout(t2)
-    },
-  }
 }
