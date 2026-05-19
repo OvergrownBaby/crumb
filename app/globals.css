@@ -351,6 +351,24 @@ body {
   filter: saturate(0.88) contrast(1.04) brightness(0.99);
 }
 
+/* Indeterminate sub-progress bar — used inside the current segment of
+   the 4-stage progress bar in the submit form. We don't know real
+   percent (Gemini gives no callback), so this just shimmers across the
+   active segment to communicate "something is happening." */
+@keyframes fm-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.fm-indeterminate-bar {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent) 50%,
+    transparent 100%
+  );
+  animation: fm-indeterminate 1.6s linear infinite;
+}
+
 /* Soft inner-glow ring */
 .ring-inset-soft {
   box-shadow: inset 0 0 0 1px rgba(214, 198, 163, 0.45);

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import type { SourceKind } from '@/lib/types'
 import { SourceBadge } from './source-badge'
-import { Loader2, Sparkles, Link as LinkIcon, Check, X, ExternalLink, ArrowRight, Key } from 'lucide-react'
+import { Loader2, Sparkles, Link as LinkIcon, X, ExternalLink, ArrowRight, Key } from 'lucide-react'
 import { cn, formatTimestamp } from '@/lib/utils'
 import { AtlasMap } from './atlas-map'
 import { photoUrl } from '@/lib/photo'
@@ -287,34 +287,63 @@ export function SubmitForm({
       />
 
       {(busy || stage === 'done' || stage === 'failed') && (
-        <div className="mt-8 bg-white rounded-2xl border border-[var(--border)] p-5">
-          <ol className="grid grid-cols-4 gap-3">
+        <div className="mt-6 bg-white rounded-2xl border border-[var(--border)] p-5">
+          {/* Single 4-stage progress bar */}
+          <div className="relative flex h-2 rounded-full overflow-hidden bg-[var(--muted-soft)]">
             {STAGES.map((s, i) => {
-              const reached = stageIndex(stage) >= i
+              const idx = stageIndex(s.key)
               const current = stage === s.key
+              const reached = stageIndex(stage) > idx
               return (
-                <li
+                <div
                   key={s.key}
                   className={cn(
-                    'rounded-xl p-3 border transition',
-                    current
-                      ? 'border-[var(--accent)] bg-[var(--accent-soft)]'
-                      : reached
-                        ? 'border-[var(--border)] bg-[var(--muted-soft)]'
-                        : 'border-[var(--border)] bg-white opacity-60'
+                    'flex-1 relative',
+                    i > 0 && 'border-l-2 border-[var(--card)]',
+                    reached && 'bg-[var(--accent)]',
+                    current && 'bg-[var(--accent)]/20'
                   )}
                 >
-                  <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
-                    <span>Step {i + 1}</span>
-                    {reached && !current && <Check className="w-3 h-3 text-green-600" />}
-                    {current && <Loader2 className="w-3 h-3 animate-spin text-[var(--accent)]" />}
-                  </div>
-                  <div className="mt-1 text-sm font-semibold">{s.label}</div>
-                  <div className="text-xs text-[var(--muted)]">{s.sub}</div>
-                </li>
+                  {current && (
+                    <div className="absolute inset-0 fm-indeterminate-bar" />
+                  )}
+                </div>
               )
             })}
-          </ol>
+          </div>
+
+          {/* Labels under each segment */}
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {STAGES.map((s) => {
+              const current = stage === s.key
+              const reached = stageIndex(stage) > stageIndex(s.key)
+              const active = current || reached
+              return (
+                <div key={s.key} className="text-center">
+                  <div
+                    className={cn(
+                      'text-[10px] uppercase tracking-wider font-semibold',
+                      current
+                        ? 'text-[var(--accent)]'
+                        : active
+                          ? 'text-[var(--foreground)]'
+                          : 'text-[var(--muted)]'
+                    )}
+                  >
+                    {s.label}
+                  </div>
+                  <div
+                    className={cn(
+                      'text-[11px] mt-0.5 transition',
+                      current ? 'text-[var(--muted)]' : 'text-[var(--muted)] opacity-60'
+                    )}
+                  >
+                    {current ? s.sub : ''}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
 
           {stage === 'failed' && (
             <div className="mt-4 flex items-start gap-2 text-sm text-red-700">
