@@ -1,14 +1,14 @@
 import Link from 'next/link'
 import { SubmitForm } from '@/components/submit-form'
 import { RotatingText } from '@/components/rotating-text'
-import { ListCard } from '@/components/list-card'
+import { VideoCard } from '@/components/video-card'
 import { GithubIcon } from '@/components/icons'
-import { getCuratedLists } from '@/lib/lists'
+import { getLatestVideos } from '@/lib/videos'
 
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  const lists = await getCuratedLists(8)
+  const videos = await getLatestVideos(24)
 
   return (
     <div className="flex-1">
@@ -46,27 +46,27 @@ export default async function HomePage() {
         </p>
       </section>
 
-      {/* Recently parsed — social proof, not editorial. Dense, small. */}
-      {lists.length > 0 && (
+      {/* Video feed — recency-sorted */}
+      {videos.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 sm:px-6 py-10 lg:py-14 border-t border-[var(--border)]">
           <div className="flex items-end justify-between mb-5 max-w-4xl">
             <div>
               <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] font-semibold">
-                Recently parsed
+                Feed
               </p>
-              <h2 className="mt-1 text-xl font-semibold">What people have dropped in.</h2>
+              <h2 className="mt-1 text-xl font-semibold">Latest videos parsed.</h2>
             </div>
             <Link
               href="/atlas"
               className="text-sm font-medium text-[var(--foreground-soft)] hover:text-[var(--accent)] hidden sm:inline-flex items-center gap-1"
             >
-              all on a map →
+              all on the map →
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {lists.map((l) => (
-              <ListCard key={`${l.creatorSlug}-${l.city}`} list={l} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {videos.map((v) => (
+              <VideoCard key={v.id} video={v} />
             ))}
           </div>
         </section>

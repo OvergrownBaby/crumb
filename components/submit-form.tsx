@@ -14,8 +14,8 @@ const PRESETS: Array<{ label: string; url: string }> = [
     url: 'https://www.youtube.com/watch?v=z-iAddtjM7A',
   },
   {
-    label: 'Mark Wiens · Malaysia spice',
-    url: 'https://www.youtube.com/watch?v=bF1VamLDso4',
+    label: 'Blondie · Shenzhen',
+    url: 'https://www.youtube.com/watch?v=U8VGHShDols',
   },
   {
     label: 'Mark Wiens · Texas BBQ',
@@ -41,12 +41,18 @@ export function SubmitForm({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!url.trim()) return
-    submit(url.trim(), getStoredKey())
+    submit(url.trim(), { geminiKey: getStoredKey() })
   }
 
   function handleReset() {
     reset()
     setUrl('')
+  }
+
+  function handleForceRefresh() {
+    const target = state.video?.url
+    if (!target) return
+    submit(target, { geminiKey: getStoredKey(), force: true })
   }
 
   const busy = state.status !== 'idle' && state.status !== 'complete' && state.status !== 'failed'
@@ -67,7 +73,7 @@ export function SubmitForm({
             id="url"
             type="url"
             inputMode="url"
-            placeholder="https://www.youtube.com/watch?v=…  or  reddit / eater / blog"
+            placeholder="https://www.youtube.com/watch?v=…  (YouTube only for now)"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             disabled={busy}
@@ -117,7 +123,7 @@ export function SubmitForm({
 
         <div className="mt-3 flex items-center justify-between gap-3 text-xs text-[var(--muted)]">
           <span className="truncate">
-            Works on YouTube, Reddit, and most articles. Long-form videos can take 1–3 minutes.
+            YouTube links only for now. Long-form videos can take 1–3 minutes.
           </span>
           <button
             type="button"
@@ -141,7 +147,13 @@ export function SubmitForm({
         onChange={setHasUserKey}
       />
 
-      {showLive && <LiveExtractionView state={state} onReset={handleReset} />}
+      {showLive && (
+        <LiveExtractionView
+          state={state}
+          onReset={handleReset}
+          onForceRefresh={handleForceRefresh}
+        />
+      )}
     </div>
   )
 }

@@ -84,7 +84,11 @@ export function useStreamExtract() {
     setState(INITIAL)
   }, [])
 
-  const submit = useCallback(async (url: string, geminiKey?: string | null) => {
+  const submit = useCallback(
+    async (
+      url: string,
+      opts: { geminiKey?: string | null; force?: boolean } = {}
+    ) => {
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
@@ -96,14 +100,14 @@ export function useStreamExtract() {
     })
 
     const headers: Record<string, string> = { 'content-type': 'application/json' }
-    if (geminiKey) headers['x-gemini-key'] = geminiKey
+    if (opts.geminiKey) headers['x-gemini-key'] = opts.geminiKey
 
     let res: Response
     try {
       res = await fetch('/api/extract/stream', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, force: opts.force === true }),
         signal: controller.signal,
       })
     } catch (err) {

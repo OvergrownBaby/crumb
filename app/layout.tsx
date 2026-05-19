@@ -40,7 +40,6 @@ export const metadata: Metadata = {
     "restaurants",
     "food map",
     "food creators",
-    "Mark Wiens",
     "food discovery",
     "TikTok restaurant map",
     "YouTube restaurant extractor",

@@ -12,12 +12,14 @@ const PROJECT_PER_DAY = 200
 
 export async function POST(req: Request) {
   let url: string
+  let force = false
   try {
-    const body = (await req.json()) as { url?: unknown }
+    const body = (await req.json()) as { url?: unknown; force?: unknown }
     if (typeof body.url !== 'string' || !body.url.trim()) {
       return Response.json({ error: 'url required' }, { status: 400 })
     }
     url = body.url.trim()
+    force = body.force === true
   } catch {
     return Response.json({ error: 'invalid json body' }, { status: 400 })
   }
@@ -109,6 +111,7 @@ export async function POST(req: Request) {
         for await (const event of ingestUrlStream(url, {
           geminiKey: usingByok ? userGeminiKey! : undefined,
           signal: abortController.signal,
+          force,
         })) {
           send(event)
           if (event.type === 'complete' || event.type === 'error') break

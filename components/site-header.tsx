@@ -23,12 +23,6 @@ export function SiteHeader() {
             Atlas
           </Link>
           <Link
-            href="/c/mark-wiens"
-            className="hidden sm:inline-flex fm-btn fm-focus px-3 py-1.5 rounded-md text-[var(--foreground-soft)] hover:text-[var(--foreground)] hover:bg-[var(--muted-soft)]"
-          >
-            Creators
-          </Link>
-          <Link
             href="/submit"
             className="fm-btn fm-focus ml-1 inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-[var(--foreground)] hover:bg-[var(--muted-soft)] font-medium"
           >

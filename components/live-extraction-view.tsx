@@ -14,9 +14,11 @@ import { Loader2, X, ArrowRight, ExternalLink, MapPin } from 'lucide-react'
 export function LiveExtractionView({
   state,
   onReset,
+  onForceRefresh,
 }: {
   state: StreamState
   onReset: () => void
+  onForceRefresh: () => void
 }) {
   const elapsed = useElapsed(state.startedAt, state.finishedAt)
   const geocoded = state.restaurants.filter((r) => r.lat != null && r.lng != null)
@@ -101,7 +103,7 @@ export function LiveExtractionView({
             </AnimatePresence>
           </ol>
 
-          <div className="lg:border-l border-t lg:border-t-0 border-[var(--border)] bg-[var(--muted-soft)]/40 h-[280px] lg:h-auto lg:min-h-[400px] relative">
+          <div className="lg:border-l border-t lg:border-t-0 border-[var(--border)] bg-[var(--muted-soft)]/40 h-[280px] lg:h-[480px] lg:self-start relative">
             {mapRestaurants.length > 0 ? (
               <AtlasMap restaurants={mapRestaurants} className="absolute inset-0" />
             ) : (
@@ -131,19 +133,27 @@ export function LiveExtractionView({
 
       {/* Complete CTA */}
       {state.status === 'complete' && state.result && (
-        <div className="p-5 border-t border-[var(--border)] flex flex-wrap gap-2">
-          <Link
-            href="/atlas"
-            className="fm-btn flex-1 inline-flex items-center justify-center gap-1.5 bg-[var(--foreground)] text-[var(--background)] font-semibold py-3 rounded-xl hover:bg-[var(--accent)]"
-          >
-            View on atlas
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+        <div className="p-5 border-t border-[var(--border)] space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/atlas"
+              className="fm-btn flex-1 inline-flex items-center justify-center gap-1.5 bg-[var(--foreground)] text-[var(--background)] font-semibold py-3 rounded-xl hover:bg-[var(--accent)]"
+            >
+              View on atlas
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <button
+              onClick={onReset}
+              className="fm-btn px-5 py-3 rounded-xl border border-[var(--border)] hover:border-[var(--foreground)] text-sm font-semibold"
+            >
+              Add another
+            </button>
+          </div>
           <button
-            onClick={onReset}
-            className="fm-btn px-5 py-3 rounded-xl border border-[var(--border)] hover:border-[var(--foreground)] text-sm font-semibold"
+            onClick={onForceRefresh}
+            className="text-xs text-[var(--muted)] hover:text-[var(--accent)] underline underline-offset-2"
           >
-            Add another
+            Re-extract from scratch (skip cache)
           </button>
         </div>
       )}

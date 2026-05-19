@@ -48,15 +48,24 @@ export type Restaurant = {
   topCreators: Creator[]
 }
 
+export type DishMention = {
+  id: string
+  name: string
+  quote: string
+  timestampSec?: number
+}
+
 export type Mention = {
   id: string
   restaurantId: string
   source: Source
+  /** Legacy single dish — use `dishes` instead. */
   dish?: string
   quote: string
   timestampSec?: number
   anchor?: string
   createdAt: string
+  dishes: DishMention[]
 }
 
 export type AtlasFilters = {
@@ -66,19 +75,3 @@ export type AtlasFilters = {
   sourceKind?: SourceKind[]
 }
 
-export type JobStatus =
-  | 'queued'
-  | 'fetching'
-  | 'extracting'
-  | 'geocoding'
-  | 'done'
-  | 'failed'
-
-export type ExtractJob = {
-  id: string
-  url: string
-  status: JobStatus
-  progress?: string
-  result?: { restaurants: Restaurant[]; mentions: Mention[] }
-  error?: string
-}

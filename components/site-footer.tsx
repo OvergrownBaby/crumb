@@ -37,14 +37,6 @@ export function SiteFooter() {
                   Add a link
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/c/mark-wiens"
-                  className="text-[var(--foreground-soft)] hover:text-[var(--accent)]"
-                >
-                  Creators
-                </Link>
-              </li>
             </ul>
           </div>
           <div>

@@ -27,24 +27,12 @@
 You watch a Mark Wiens video. He raves about a noodle shop. You forget the
 name. Three months later you're in Hong Kong and you can't find it.
 
-**Foodcrawl fixes that.** Drop any link with a restaurant in it — a YouTube
-video, an Eater list, a Reddit thread, a TikTok — and the AI watches or reads
-it, finds every restaurant mentioned, and drops them on a map. Each pin keeps
-the *verbatim quote and timestamp* from the source, so you can hear the
-creator say it before you go.
+**Foodcrawl fixes that.** Drop a YouTube link with a restaurant in it and the
+AI watches the video, finds every restaurant mentioned, and drops them on a
+map. Each pin keeps the *verbatim quote and timestamp* from the source, so
+you can hear the creator say it before you go.
 
 > Built so I'd stop forgetting where Mark Wiens told me to eat.
-
-### vs. the alternatives
-
-| | Foodcrawl | TokSpot / Rezz / GoPlaces | Beli | wiensmap.com | Eater / Infatuation |
-|---|---|---|---|---|---|
-| Long-form YouTube | ✅ | ❌ short clips only | ❌ | only Mark | ❌ |
-| Multi-creator atlas | ✅ | personal only | friends only | only Mark | editorial only |
-| Verbatim source quotes | ✅ | ❌ | ❌ | ❌ | n/a |
-| Photos + map + timestamp | ✅ | ✅ map only | ✅ map only | ✅ map only | ❌ no map |
-| Open source | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Subscription | never | freemium | free | free | free |
 
 ---
 
@@ -150,11 +138,12 @@ is the [v1.5 fix](#-roadmap).
 
 | Feature | Status |
 |---|---|
-| URL pipeline (YouTube / Reddit / articles) | ✅ live |
+| YouTube ingestion pipeline | ✅ live |
 | Verbatim-quote anti-hallucination | ✅ live |
 | Geocoding + Postgres cache | ✅ live |
 | Photos via Google Places (proxied) | ✅ live |
 | Map with route polyline + numbered pins | ✅ live |
+| Reddit + article fetchers | 🚧 code exists, gated off at launch |
 | TikTok / Instagram Reels | ⏳ needs yt-dlp + residential proxies |
 | Long-form video chunking (>1h) | ⏳ v1.5 |
 | Browser extension (one-click from YouTube) | 📅 v2 |
