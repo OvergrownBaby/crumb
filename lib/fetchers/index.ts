@@ -1,7 +1,7 @@
-import { fetchReddit } from './reddit'
-import { fetchArticle } from './article'
 import { fetchYouTube } from './youtube'
 import type { SourceKind } from '@/lib/types'
+// Non-YouTube fetchers are temporarily disabled — files kept in this directory
+// (./reddit, ./article) for easy re-enable later.
 
 export type FetchedContent =
   | {
@@ -14,6 +14,10 @@ export type FetchedContent =
       publishedAt?: string
       channelName?: string
       channelId?: string
+      /** Video description scraped from the watch page. Creators almost
+       * always list restaurant names + timestamps here — used as canonical
+       * ground-truth so Gemini doesn't phonetically misspell foreign names. */
+      description?: string
     }
   | {
       kind: 'text'
@@ -43,18 +47,9 @@ export async function fetchUrl(url: string): Promise<FetchedContent> {
   const kind = classify(url)
   if (!kind) throw new Error('Invalid URL')
 
-  switch (kind) {
-    case 'youtube':
-      return fetchYouTube(url)
-    case 'reddit':
-      return fetchReddit(url)
-    case 'article':
-      return fetchArticle(url)
-    case 'tiktok':
-      throw new Error('TikTok ingestion is not in v1 (needs yt-dlp + proxies). Try a YouTube link instead.')
-    case 'maps_list':
-      throw new Error('Google Maps lists are not in v1. Try a YouTube link or blog post.')
-    case 'text_paste':
-      throw new Error('text_paste should not come through fetchUrl')
+  if (kind !== 'youtube') {
+    throw new Error('Only YouTube links are supported right now. Paste a youtube.com or youtu.be URL.')
   }
+
+  return fetchYouTube(url)
 }

@@ -4,8 +4,10 @@ import { getRestaurant } from '@/lib/data'
 import { AtlasMap } from '@/components/atlas-map'
 import { SourceBadge } from '@/components/source-badge'
 import { CreatorAvatar } from '@/components/creator-avatar'
+import { YouTubeClip } from '@/components/youtube-clip'
+import { youtubeIdFromUrl } from '@/lib/fetchers/youtube'
 import { formatTimestamp, priceDots } from '@/lib/utils'
-import { ExternalLink, MapPin, ArrowLeft } from 'lucide-react'
+import { ExternalLink, MapPin, ArrowLeft, Utensils } from 'lucide-react'
 import { photoUrl } from '@/lib/photo'
 
 export const dynamic = 'force-dynamic'
@@ -101,48 +103,110 @@ export default async function PlacePage({
               <h2 className="text-xl font-bold mb-3">
                 {mentions.length} {mentions.length === 1 ? 'mention' : 'mentions'}
               </h2>
-              <ul className="space-y-3">
-                {mentions.map((m) => (
-                  <li
-                    key={m.id}
-                    className="bg-[var(--card)] rounded-2xl border border-[var(--border)] p-4"
-                  >
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <SourceBadge kind={m.source.kind} />
-                      {m.source.creator && <CreatorAvatar creator={m.source.creator} size="sm" />}
-                      {m.source.title && (
-                        <span className="text-xs text-[var(--muted)] truncate flex-1">
-                          {m.source.title}
-                        </span>
-                      )}
-                      <a
-                        href={
-                          m.timestampSec != null
-                            ? `${m.source.url}&t=${Math.floor(m.timestampSec)}s`
-                            : m.source.url
-                        }
-                        target="_blank"
-                        rel="noreferrer"
-                        className="ml-auto text-xs font-medium text-[var(--accent)] hover:underline inline-flex items-center gap-1"
-                      >
-                        {m.timestampSec != null && (
-                          <span className="font-mono">{formatTimestamp(m.timestampSec)}</span>
+              <ul className="space-y-4">
+                {mentions.map((m) => {
+                  const ytId = youtubeIdFromUrl(m.source.url)
+                  return (
+                    <li
+                      key={m.id}
+                      className="bg-[var(--card)] rounded-2xl border border-[var(--border)] p-4"
+                    >
+                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        <SourceBadge kind={m.source.kind} />
+                        {m.source.creator && (
+                          <CreatorAvatar creator={m.source.creator} size="sm" />
                         )}
-                        Open
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </div>
-                    {m.dish && (
-                      <div className="text-xs text-[var(--muted)] mb-2">
-                        <span className="font-semibold text-[var(--foreground)]">Dish:</span>{' '}
-                        {m.dish}
+                        {m.source.title && (
+                          <span className="text-xs text-[var(--muted)] truncate flex-1">
+                            {m.source.title}
+                          </span>
+                        )}
+                        <a
+                          href={
+                            m.timestampSec != null
+                              ? `${m.source.url}&t=${Math.floor(m.timestampSec)}s`
+                              : m.source.url
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ml-auto text-xs font-medium text-[var(--accent)] hover:underline inline-flex items-center gap-1"
+                        >
+                          Open on YouTube
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
                       </div>
-                    )}
-                    <blockquote className="text-sm text-[var(--foreground)] border-l-2 border-[var(--accent)]/40 pl-3 italic">
-                      &ldquo;{m.quote}&rdquo;
-                    </blockquote>
-                  </li>
-                ))}
+                      <blockquote className="text-sm text-[var(--foreground)] border-l-2 border-[var(--accent)]/40 pl-3 italic mb-3">
+                        &ldquo;{m.quote}&rdquo;
+                      </blockquote>
+
+                      {/* Legacy fallback: pre-dish_mentions records have a
+                          single comma-joined `dish` string. Render it as a
+                          plain line + the single timestamp jump until
+                          re-extraction populates dish_mentions. */}
+                      {m.dishes.length === 0 && m.dish && (
+                        <div className="rounded-xl ring-1 ring-[var(--border)] bg-[var(--background)]/40 p-3 text-xs">
+                          <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] font-semibold inline-flex items-center gap-1.5 mb-1.5">
+                            <Utensils className="w-3 h-3" />
+                            Dishes
+                          </div>
+                          <p className="text-[var(--foreground-soft)] leading-relaxed">{m.dish}</p>
+                          {m.timestampSec != null && ytId && (
+                            <div className="mt-3">
+                              <YouTubeClip
+                                videoId={ytId}
+                                startSec={m.timestampSec}
+                                title={m.source.title ?? undefined}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {m.dishes.length > 0 && (
+                        <div className="mt-4 space-y-3">
+                          <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] font-semibold inline-flex items-center gap-1.5">
+                            <Utensils className="w-3 h-3" />
+                            {m.dishes.length === 1 ? 'Dish' : `${m.dishes.length} dishes`}
+                          </div>
+                          <ol className="space-y-3">
+                            {m.dishes.map((d, i) => (
+                              <li
+                                key={d.id}
+                                className="rounded-xl ring-1 ring-[var(--border)] bg-[var(--background)]/40 p-3"
+                              >
+                                <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                                  <div className="font-semibold text-sm flex items-center gap-2">
+                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--accent)] text-white text-[10px] font-bold fm-num">
+                                      {i + 1}
+                                    </span>
+                                    {d.name}
+                                  </div>
+                                  {d.timestampSec != null && (
+                                    <span className="text-[11px] font-mono text-[var(--muted)]">
+                                      {formatTimestamp(d.timestampSec)}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="mt-1.5 text-xs text-[var(--foreground-soft)] italic leading-relaxed">
+                                  &ldquo;{d.quote}&rdquo;
+                                </p>
+                                {ytId && (
+                                  <div className="mt-3">
+                                    <YouTubeClip
+                                      videoId={ytId}
+                                      startSec={d.timestampSec}
+                                      title={`${d.name} — ${m.source.title ?? ''}`}
+                                    />
+                                  </div>
+                                )}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           </div>

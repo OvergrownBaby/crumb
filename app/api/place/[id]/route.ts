@@ -17,15 +17,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (!r) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
-  const { data: mentionsRows } = await sb
+  const { data: mentionsRows, error: mentionsErr } = await sb
     .from('mentions')
     .select(
       `id, restaurant_id, dish, quote, timestamp_sec, anchor, created_at,
        videos ( id, source_kind, url, title, thumbnail_url, published_at,
-         creators ( slug, name, platform, avatar_url, url ) )`
+         creators ( slug, name, platform, avatar_url, url ) ),
+       dish_mentions ( id, name, quote, timestamp_sec )`
     )
     .eq('restaurant_id', id)
     .order('created_at', { ascending: false })
+  if (mentionsErr) {
+    console.error('[place] mentions query error:', mentionsErr)
+  }
 
   const restaurant: Restaurant = {
     id: r.id,
@@ -66,6 +70,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         url: string | null
       } | null
     } | null
+    dish_mentions: Array<{
+      id: string
+      name: string
+      quote: string
+      timestamp_sec: number | null
+    }>
   }
   const typedMentions = (mentionsRows ?? []) as unknown as MentionRow[]
   const mentions: Mention[] = typedMentions.map((m) => ({
@@ -94,6 +104,18 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     timestampSec: m.timestamp_sec ?? undefined,
     anchor: m.anchor ?? undefined,
     createdAt: m.created_at,
+    dishes: (m.dish_mentions ?? [])
+      .map((d) => ({
+        id: d.id,
+        name: d.name,
+        quote: d.quote,
+        timestampSec: d.timestamp_sec ?? undefined,
+      }))
+      .sort((a, b) => {
+        const at = a.timestampSec ?? Infinity
+        const bt = b.timestampSec ?? Infinity
+        return at - bt
+      }),
   }))
 
   return NextResponse.json({ restaurant, mentions })

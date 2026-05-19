@@ -102,6 +102,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
       timestampSec: m.timestamp_sec ?? undefined,
       anchor: m.anchor ?? undefined,
       createdAt: m.created_at,
+      dishes: [],
     })
   }
 

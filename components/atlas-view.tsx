@@ -273,12 +273,6 @@ function DetailPanel({
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
-              {m.dish && (
-                <div className="text-xs text-[var(--muted)] mb-1">
-                  <span className="font-semibold text-[var(--foreground)]">Dish:</span>{' '}
-                  {m.dish}
-                </div>
-              )}
               <blockquote className="relative text-sm text-[var(--foreground-soft)] pl-4 leading-relaxed">
                 <span
                   aria-hidden
@@ -288,6 +282,38 @@ function DetailPanel({
                 </span>
                 <span className="italic">{m.quote}</span>
               </blockquote>
+              {m.dishes.length > 0 ? (
+                <ul className="mt-3 space-y-1.5">
+                  {m.dishes.map((d) => (
+                    <li
+                      key={d.id}
+                      className="flex items-start gap-2 text-xs"
+                    >
+                      <a
+                        href={
+                          d.timestampSec != null
+                            ? `${m.source.url}&t=${Math.floor(d.timestampSec)}s`
+                            : m.source.url
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-[10px] text-[var(--accent)] hover:underline shrink-0 mt-px"
+                      >
+                        {d.timestampSec != null ? formatTimestamp(d.timestampSec) : '·'}
+                      </a>
+                      <span className="font-medium text-[var(--foreground)]">
+                        {d.name}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : m.dish ? (
+                // Legacy fallback for mentions ingested before dish_mentions migration.
+                <div className="mt-2 text-xs text-[var(--muted)]">
+                  <span className="font-semibold text-[var(--foreground)]">Dishes:</span>{' '}
+                  {m.dish}
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>

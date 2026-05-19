@@ -20,11 +20,12 @@ import { fetchUrl, type FetchedContent } from './fetchers'
 import { extractRestaurants } from './extractor'
 import { geocodeRestaurant } from './geocoder'
 import { normalizeName } from './normalize'
+import { fetchAndStoreChannelAvatar } from './avatar-fetcher'
 import type { ExtractEvent } from './stream-events'
 
 export async function* ingestUrlStream(
   url: string,
-  opts: { geminiKey?: string; signal?: AbortSignal } = {}
+  opts: { geminiKey?: string; signal?: AbortSignal; force?: boolean } = {}
 ): AsyncGenerator<ExtractEvent> {
   const sb = supabaseAdmin()
 
@@ -61,6 +62,7 @@ export async function* ingestUrlStream(
       name: content.channelName,
       platform: 'youtube',
       url: content.channelId ? `https://youtube.com/channel/${content.channelId}` : undefined,
+      channelId: content.channelId,
     })
   }
 
@@ -74,6 +76,71 @@ export async function* ingestUrlStream(
     published_at: 'publishedAt' in content ? content.publishedAt : undefined,
     raw_transcript: content.kind === 'text' ? content.text.slice(0, 200_000) : null,
   })
+
+  // 2.5 Cache: if this video was already extracted, replay the saved
+  //     mentions as a fast event stream and skip Gemini entirely. The
+  //     client still gets the same animation, just instantly.
+  if (!opts.force) {
+    const { data: cached } = await sb
+      .from('mentions')
+      .select(
+        'id, quote, timestamp_sec, dish, created_at, restaurants!inner ( id, name, name_local, city, country, lat, lng, cuisine, price_level, photo_name, places_id )'
+      )
+      .eq('video_id', videoId)
+      .order('created_at', { ascending: true })
+
+    if (cached && cached.length > 0) {
+      yield {
+        type: 'extraction.started',
+        data: { message: 'Already extracted earlier — replaying saved results.' },
+      }
+      yield { type: 'extraction.found', data: { count: cached.length } }
+
+      for (const m of cached as unknown as CachedMentionRow[]) {
+        if (opts.signal?.aborted) return
+        const r = m.restaurants
+        const clientId = randomUUID()
+        yield {
+          type: 'restaurant.found',
+          data: {
+            clientId,
+            name: r.name,
+            nameLocal: r.name_local ?? undefined,
+            city: r.city,
+            country: r.country,
+            cuisine: r.cuisine ?? undefined,
+            dish: m.dish ?? undefined,
+            quote: m.quote,
+            timestampSec: m.timestamp_sec ?? undefined,
+          },
+        }
+        yield {
+          type: 'restaurant.geocoded',
+          data: {
+            clientId,
+            id: r.id,
+            lat: r.lat,
+            lng: r.lng,
+            photoName: r.photo_name ?? undefined,
+            placesId: r.places_id ?? undefined,
+            priceLevel: (r.price_level ?? undefined) as 1 | 2 | 3 | 4 | undefined,
+            existed: true,
+          },
+        }
+      }
+
+      yield {
+        type: 'complete',
+        data: {
+          videoId,
+          restaurantsAdded: 0,
+          mentionsAdded: cached.length,
+          skippedNoGeocode: 0,
+        },
+      }
+      return
+    }
+  }
 
   // 3. The slow phase — Gemini watching the video. No events emitted
   //    during this window because Gemini buffers everything; we'd just
@@ -133,7 +200,7 @@ export async function* ingestUrlStream(
         city: r.city,
         country: r.country,
         cuisine: r.cuisine,
-        dish: r.dish,
+        dish: r.dishes[0]?.name,
         quote: r.quote,
         timestampSec: r.timestampSec,
       },
@@ -197,17 +264,38 @@ export async function* ingestUrlStream(
       restaurantsAdded++
     }
 
-    const { error: mErr } = await sb.from('mentions').upsert(
-      {
-        restaurant_id: restaurantId,
-        video_id: videoId,
-        dish: r.dish ?? null,
-        quote: r.quote,
-        timestamp_sec: r.timestampSec ?? null,
-      },
-      { onConflict: 'restaurant_id,video_id' }
-    )
-    if (!mErr) mentionsAdded++
+    const { data: mentionRow, error: mErr } = await sb
+      .from('mentions')
+      .upsert(
+        {
+          restaurant_id: restaurantId,
+          video_id: videoId,
+          // Legacy single-dish column: keep the first dish name for backwards
+          // compatibility. dish_mentions is the source of truth going forward.
+          dish: r.dishes[0]?.name ?? null,
+          quote: r.quote,
+          timestamp_sec: r.timestampSec ?? null,
+        },
+        { onConflict: 'restaurant_id,video_id' }
+      )
+      .select('id')
+      .single()
+    if (!mErr && mentionRow) {
+      mentionsAdded++
+      // Write per-dish rows. Each (mention_id, name) is unique — upserting
+      // lets re-extractions update timestamps/quotes idempotently.
+      if (r.dishes.length > 0) {
+        const dishRows = r.dishes.map((d) => ({
+          mention_id: mentionRow.id,
+          name: d.name,
+          quote: d.quote,
+          timestamp_sec: d.timestampSec ?? null,
+        }))
+        await sb
+          .from('dish_mentions')
+          .upsert(dishRows, { onConflict: 'mention_id,name' })
+      }
+    }
 
     if (!restaurantId) continue
     const finalRestaurantId: string = restaurantId
@@ -233,6 +321,26 @@ export async function* ingestUrlStream(
   }
 }
 
+type CachedMentionRow = {
+  id: string
+  quote: string
+  timestamp_sec: number | null
+  dish: string | null
+  restaurants: {
+    id: string
+    name: string
+    name_local: string | null
+    city: string
+    country: string
+    lat: number
+    lng: number
+    cuisine: string | null
+    price_level: number | null
+    photo_name: string | null
+    places_id: string | null
+  }
+}
+
 function videoIdFor(content: FetchedContent): string {
   if (content.kind === 'video_url') return `yt:${content.videoId}`
   return `${content.sourceKind}:${hashUrl(content.url)}`
@@ -251,17 +359,38 @@ async function upsertCreator(args: {
   name: string
   platform: 'youtube' | 'tiktok' | 'instagram' | 'reddit' | 'web'
   url?: string
+  channelId?: string
 }): Promise<string> {
   const sb = supabaseAdmin()
   const slug = args.name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
+
+  // Check existing avatar before upserting so we only fetch on first ingest
+  // (or when avatar is still missing).
+  const { data: existing } = await sb
+    .from('creators')
+    .select('avatar_url')
+    .eq('slug', slug)
+    .maybeSingle()
+
   await sb
     .from('creators')
     .upsert(
       { slug, name: args.name, platform: args.platform, url: args.url ?? null },
       { onConflict: 'slug', ignoreDuplicates: false }
     )
+
+  if (!existing?.avatar_url && args.channelId) {
+    const avatarUrl = await fetchAndStoreChannelAvatar({
+      channelId: args.channelId,
+      slug,
+    })
+    if (avatarUrl) {
+      await sb.from('creators').update({ avatar_url: avatarUrl }).eq('slug', slug)
+    }
+  }
+
   return slug
 }

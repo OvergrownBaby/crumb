@@ -3,6 +3,7 @@ import { fetchUrl, type FetchedContent } from './fetchers'
 import { extractRestaurants, type ExtractedRestaurant } from './extractor'
 import { geocodeRestaurant } from './geocoder'
 import { normalizeName, placesCacheKey } from './normalize'
+import { fetchAndStoreChannelAvatar } from './avatar-fetcher'
 
 export type PipelineResult = {
   videoId: string
@@ -39,6 +40,7 @@ export async function ingestUrl(
       name: content.channelName,
       platform: 'youtube',
       url: content.channelId ? `https://youtube.com/channel/${content.channelId}` : undefined,
+      channelId: content.channelId,
     })
   }
 
@@ -117,20 +119,36 @@ export async function ingestUrl(
       restaurantsAdded++
     }
 
-    const { error: mErr } = await sb
+    const { data: mentionRow, error: mErr } = await sb
       .from('mentions')
       .upsert(
         {
           restaurant_id: restaurantId,
           video_id: videoId,
-          dish: r.dish ?? null,
+          // Legacy column — kept for backwards compatibility. Source of truth is dish_mentions.
+          dish: r.dishes[0]?.name ?? null,
           quote: r.quote,
           timestamp_sec: r.timestampSec ?? null,
         },
         { onConflict: 'restaurant_id,video_id' }
       )
+      .select('id')
+      .single()
 
-    if (!mErr) mentionsAdded++
+    if (!mErr && mentionRow) {
+      mentionsAdded++
+      if (r.dishes.length > 0) {
+        await sb.from('dish_mentions').upsert(
+          r.dishes.map((d) => ({
+            mention_id: mentionRow.id,
+            name: d.name,
+            quote: d.quote,
+            timestamp_sec: d.timestampSec ?? null,
+          })),
+          { onConflict: 'mention_id,name' }
+        )
+      }
+    }
 
     // Suppress unused-var lint
     void placesCacheKey
@@ -158,12 +176,19 @@ async function upsertCreator(args: {
   name: string
   platform: 'youtube' | 'tiktok' | 'instagram' | 'reddit' | 'web'
   url?: string
+  channelId?: string
 }): Promise<string> {
   const sb = supabaseAdmin()
   const slug = args.name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
+
+  const { data: existing } = await sb
+    .from('creators')
+    .select('avatar_url')
+    .eq('slug', slug)
+    .maybeSingle()
 
   await sb
     .from('creators')
@@ -176,6 +201,16 @@ async function upsertCreator(args: {
       },
       { onConflict: 'slug', ignoreDuplicates: false }
     )
+
+  if (!existing?.avatar_url && args.channelId) {
+    const avatarUrl = await fetchAndStoreChannelAvatar({
+      channelId: args.channelId,
+      slug,
+    })
+    if (avatarUrl) {
+      await sb.from('creators').update({ avatar_url: avatarUrl }).eq('slug', slug)
+    }
+  }
 
   return slug
 }
