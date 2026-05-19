@@ -17,7 +17,7 @@ export async function generateMetadata({
   const data = await getCreator(slug)
   if (!data) return { title: 'Not found' }
   return {
-    title: `${data.creator.name} — Crumb`,
+    title: `${data.creator.name} — Foodcrawl`,
     description: `${data.restaurants.length} restaurants recommended by ${data.creator.name}.`,
   }
 }

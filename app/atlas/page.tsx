@@ -4,7 +4,7 @@ import { AtlasView } from '@/components/atlas-view'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Atlas — Crumb',
+  title: 'Atlas — Foodcrawl',
 }
 
 export default async function AtlasPage() {

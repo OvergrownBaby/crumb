@@ -62,7 +62,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            'Crumb is busy right now — too many submissions on the shared server key in the last hour. Try again, or set your own Gemini key to skip the limit.',
+            'Foodcrawl is busy right now — too many submissions on the shared server key in the last hour. Try again, or set your own Gemini key to skip the limit.',
         },
         { status: 429 }
       )
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            'Crumb hit its daily limit on the shared server key. Submissions reopen tomorrow — or set your own Gemini key to bypass it.',
+            'Foodcrawl hit its daily limit on the shared server key. Submissions reopen tomorrow — or set your own Gemini key to bypass it.',
         },
         { status: 429 }
       )

@@ -14,17 +14,17 @@ const mono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://crumb-vert.vercel.app";
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://thefoodcrawl.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
   title: {
-    default: "Crumb — restaurants from the people you trust",
-    template: "%s — Crumb",
+    default: "Foodcrawl — restaurants from the people you trust",
+    template: "%s — Foodcrawl",
   },
   description:
     "Drop any YouTube, TikTok, Reddit or article link. The AI watches it, finds every restaurant mentioned, drops them on a map — with verbatim quotes and timestamps.",
-  applicationName: "Crumb",
+  applicationName: "Foodcrawl",
   authors: [{ name: "OvergrownBaby", url: "https://github.com/OvergrownBaby" }],
   keywords: [
     "restaurants",
@@ -38,14 +38,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: SITE,
-    siteName: "Crumb",
-    title: "Crumb — restaurants from the people you trust",
+    siteName: "Foodcrawl",
+    title: "Foodcrawl — restaurants from the people you trust",
     description:
       "Drop a video link. The AI watches it. Every restaurant pinned with a verbatim quote and a timestamp.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Crumb — restaurants from the people you trust",
+    title: "Foodcrawl — restaurants from the people you trust",
     description:
       "Drop a video link. The AI watches it. Every restaurant pinned with a verbatim quote and a timestamp.",
     creator: "@OvergrownBaby",

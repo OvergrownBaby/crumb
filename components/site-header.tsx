@@ -13,7 +13,7 @@ export function SiteHeader() {
         >
           <LogoMark className="w-7 h-7" />
           <span className="font-semibold text-[var(--foreground)] -tracking-[0.01em]">
-            Crumb
+            Foodcrawl
           </span>
         </Link>
 
@@ -38,7 +38,7 @@ export function SiteHeader() {
             Add
           </Link>
           <a
-            href="https://github.com/OvergrownBaby/crumb"
+            href="https://github.com/OvergrownBaby/thefoodcrawl"
             target="_blank"
             rel="noreferrer"
             className="fm-btn fm-focus ml-2 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-[var(--border-strong)] hover:bg-[var(--muted-soft)] text-sm"

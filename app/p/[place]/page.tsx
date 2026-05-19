@@ -19,7 +19,7 @@ export async function generateMetadata({
   const data = await getRestaurant(id)
   if (!data) return { title: 'Not found' }
   return {
-    title: `${data.restaurant.name} — Crumb`,
+    title: `${data.restaurant.name} — Foodcrawl`,
     description: `${data.restaurant.cuisine ?? 'Restaurant'} in ${data.restaurant.city}. Recommended ${data.mentions.length} ${data.mentions.length === 1 ? 'time' : 'times'}.`,
   }
 }

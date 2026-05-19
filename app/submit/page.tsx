@@ -2,7 +2,7 @@ import { SubmitForm } from '@/components/submit-form'
 import { SourceBadge } from '@/components/source-badge'
 
 export const metadata = {
-  title: 'Drop a link — Crumb',
+  title: 'Drop a link — Foodcrawl',
 }
 
 export default function SubmitPage() {

@@ -6,7 +6,7 @@
  * persist it server-side, never log it, never associate it with the user.
  */
 
-const KEY = 'crumb.byok.gemini'
+const KEY = 'foodcrawl.byok.gemini'
 
 export function getStoredKey(): string | null {
   if (typeof window === 'undefined') return null

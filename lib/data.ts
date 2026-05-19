@@ -10,7 +10,7 @@ import { MOCK_RESTAURANTS, MOCK_MENTIONS, CREATORS, MARK_WIENS } from './mock-da
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== 'false'
 
 // Server-side fetches use the absolute path; browser uses relative.
-// VERCEL_PROJECT_PRODUCTION_URL is the public alias (e.g. crumb-vert.vercel.app);
+// VERCEL_PROJECT_PRODUCTION_URL is the public alias (e.g. thefoodcrawl.com);
 // VERCEL_URL is the deployment-specific URL which is auth-protected.
 function apiBase(): string {
   if (typeof window !== 'undefined') return ''

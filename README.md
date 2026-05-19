@@ -1,11 +1,11 @@
 <div align="center">
 
-<img src=".github/assets/banner.svg" alt="Crumb — restaurants from the people you actually trust" width="100%" />
+<img src=".github/assets/banner.svg" alt="Foodcrawl — restaurants from the people you actually trust" width="100%" />
 
 <br/>
 
 <p>
-  <a href="https://crumb-vert.vercel.app"><img alt="Live demo" src="https://img.shields.io/badge/demo-crumb--vert.vercel.app-DA3F2A?style=flat-square" /></a>
+  <a href="https://thefoodcrawl.com"><img alt="Live demo" src="https://img.shields.io/badge/demo-thefoodcrawl.com-DA3F2A?style=flat-square" /></a>
   <a href="LICENSE"><img alt="License: AGPL v3" src="https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square" /></a>
   <img alt="Status" src="https://img.shields.io/badge/status-alpha-F2A93B?style=flat-square" />
   <img alt="Built with" src="https://img.shields.io/badge/built_with-Next.js%20%C2%B7%20Supabase%20%C2%B7%20Gemini%20%C2%B7%20Claude-1A1814?style=flat-square" />
@@ -22,12 +22,12 @@
 
 ---
 
-## What is Crumb?
+## What is Foodcrawl?
 
 You watch a Mark Wiens video. He raves about a noodle shop. You forget the
 name. Three months later you're in Hong Kong and you can't find it.
 
-**Crumb fixes that.** Drop any link with a restaurant in it — a YouTube
+**Foodcrawl fixes that.** Drop any link with a restaurant in it — a YouTube
 video, an Eater list, a Reddit thread, a TikTok — and the AI watches or reads
 it, finds every restaurant mentioned, and drops them on a map. Each pin keeps
 the *verbatim quote and timestamp* from the source, so you can hear the
@@ -37,7 +37,7 @@ creator say it before you go.
 
 ### vs. the alternatives
 
-| | Crumb | TokSpot / Rezz / GoPlaces | Beli | wiensmap.com | Eater / Infatuation |
+| | Foodcrawl | TokSpot / Rezz / GoPlaces | Beli | wiensmap.com | Eater / Infatuation |
 |---|---|---|---|---|---|
 | Long-form YouTube | ✅ | ❌ short clips only | ❌ | only Mark | ❌ |
 | Multi-creator atlas | ✅ | personal only | friends only | only Mark | editorial only |
@@ -51,8 +51,8 @@ creator say it before you go.
 ## 🚀 Quick start
 
 ```bash
-git clone https://github.com/OvergrownBaby/crumb
-cd crumb
+git clone https://github.com/OvergrownBaby/thefoodcrawl
+cd thefoodcrawl
 npm install
 cp .env.example .env.local   # then fill in keys
 npm run dev
@@ -172,7 +172,7 @@ is the [v1.5 fix](#-roadmap).
 - [ ] **Public REST API** — let others build atop the data.
 - [ ] **City "tour" routes** — auto-suggest a walking order for nearby pins.
 
-Have ideas? [Open an issue](https://github.com/OvergrownBaby/crumb/issues) or send a PR.
+Have ideas? [Open an issue](https://github.com/OvergrownBaby/thefoodcrawl/issues) or send a PR.
 
 ---
 
@@ -192,19 +192,19 @@ Quick smoke-test path: `npm run seed:one -- <url>`.
 
 ### Creator removal policy
 
-If you're a creator and want a pin or your channel removed from Crumb,
-[open an issue](https://github.com/OvergrownBaby/crumb/issues) and we'll
+If you're a creator and want a pin or your channel removed from Foodcrawl,
+[open an issue](https://github.com/OvergrownBaby/thefoodcrawl/issues) and we'll
 remove it within 24 hours. No questions, no friction. This isn't a fight.
 
 ---
 
 ## 📜 License
 
-[AGPL-3.0-or-later](LICENSE). You can use, modify, and self-host Crumb for
+[AGPL-3.0-or-later](LICENSE). You can use, modify, and self-host Foodcrawl for
 any purpose — including commercial — but if you run a modified version as a
 network service, you must publish your modifications under the same license.
 
-This means a hobbyist can fork Crumb and host it for themselves freely, but a
+This means a hobbyist can fork Foodcrawl and host it for themselves freely, but a
 VC-backed clone that wants to slap a paywall on top has to share their
 improvements back with the community.
 

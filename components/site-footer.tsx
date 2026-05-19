@@ -7,7 +7,7 @@ export function SiteFooter() {
     <footer className="border-t border-[var(--border)] bg-[var(--background)]/40 mt-auto">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 grid sm:grid-cols-3 gap-6 text-sm">
         <div>
-          <div className="font-semibold">Crumb</div>
+          <div className="font-semibold">Foodcrawl</div>
           <p className="mt-1.5 text-[var(--muted)] leading-relaxed">
             A community map of restaurants recommended by food creators. Built so I&apos;d stop
             forgetting where Mark Wiens told me to eat.
@@ -52,7 +52,7 @@ export function SiteFooter() {
             <ul className="space-y-1.5">
               <li>
                 <a
-                  href="https://github.com/OvergrownBaby/crumb"
+                  href="https://github.com/OvergrownBaby/thefoodcrawl"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[var(--foreground-soft)] hover:text-[var(--accent)] inline-flex items-center gap-1"
@@ -72,7 +72,7 @@ export function SiteFooter() {
               </li>
               <li>
                 <a
-                  href="https://github.com/OvergrownBaby/crumb/issues"
+                  href="https://github.com/OvergrownBaby/thefoodcrawl/issues"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[var(--foreground-soft)] hover:text-[var(--accent)]"

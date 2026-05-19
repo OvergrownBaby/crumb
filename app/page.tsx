@@ -28,7 +28,7 @@ export default async function HomePage() {
 
         <div className="mt-5 flex items-center gap-x-3 gap-y-1 text-[11px] text-[var(--muted)] flex-wrap">
           <a
-            href="https://github.com/OvergrownBaby/crumb"
+            href="https://github.com/OvergrownBaby/thefoodcrawl"
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1 hover:text-[var(--accent)]"

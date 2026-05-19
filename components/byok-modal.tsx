@@ -79,7 +79,7 @@ export function ByokModal({
         </div>
 
         <p className="text-sm text-[var(--muted)] leading-relaxed mb-4">
-          By default Crumb extracts video content with my Gemini key — which has a low
+          By default Foodcrawl extracts video content with my Gemini key — which has a low
           daily limit so the bill stays reasonable. Paste your own key here and your
           submissions skip the rate limit and don&apos;t cost me anything. The key
           lives in your browser only, never on a server.
