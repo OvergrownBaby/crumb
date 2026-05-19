@@ -23,21 +23,36 @@ export default function SubmitPage() {
 
         <div className="mt-10 grid sm:grid-cols-2 gap-4 text-sm">
           <div className="border border-[var(--border)] rounded-lg p-4 bg-[var(--background-elev)]">
-            <div className="fm-label mb-2.5">Works on</div>
+            <div className="fm-label mb-2.5">Works today</div>
             <ul className="space-y-1.5 text-[var(--foreground-soft)]">
               <li className="flex items-center gap-2">
                 <SourceBadge kind="youtube" size="sm" /> Videos, Shorts, documentaries
               </li>
-              <li className="flex items-center gap-2">
+            </ul>
+
+            <div className="fm-label mt-5 mb-2.5">Coming soon</div>
+            <ul className="space-y-1.5 text-[var(--muted)]">
+              <li className="flex items-center gap-2 opacity-70">
                 <SourceBadge kind="tiktok" size="sm" /> TikTok &amp; Reels
               </li>
-              <li className="flex items-center gap-2">
+              <li className="flex items-center gap-2 opacity-70">
+                <span className="inline-flex items-center gap-1 rounded-full ring-1 ring-inset ring-pink-200 bg-pink-50 text-pink-700 font-semibold text-[10px] px-1.5 py-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
+                  <svg viewBox="0 0 16 16" className="w-3 h-3" aria-hidden>
+                    <rect x="2" y="2" width="12" height="12" rx="3.5" stroke="currentColor" strokeWidth="1.3" fill="none" />
+                    <circle cx="8" cy="8" r="2.6" stroke="currentColor" strokeWidth="1.3" fill="none" />
+                    <circle cx="11.4" cy="4.6" r="0.7" fill="currentColor" />
+                  </svg>
+                  <span className="tracking-wide">Instagram</span>
+                </span>{' '}
+                Reels &amp; posts
+              </li>
+              <li className="flex items-center gap-2 opacity-70">
                 <SourceBadge kind="article" size="sm" /> Eater, Infatuation, blogs
               </li>
-              <li className="flex items-center gap-2">
+              <li className="flex items-center gap-2 opacity-70">
                 <SourceBadge kind="reddit" size="sm" /> Threads &amp; AMAs
               </li>
-              <li className="flex items-center gap-2">
+              <li className="flex items-center gap-2 opacity-70">
                 <SourceBadge kind="maps_list" size="sm" /> Google Maps lists
               </li>
             </ul>
