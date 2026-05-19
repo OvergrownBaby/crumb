@@ -10,7 +10,8 @@
     "lint": "eslint",
     "seed:one": "tsx scripts/seed-one.ts",
     "seed:batch": "tsx scripts/seed-batch.ts",
-    "backfill:photos": "tsx scripts/backfill-photos.ts"
+    "backfill:photos": "tsx scripts/backfill-photos.ts",
+    "backfill:frames": "tsx scripts/backfill-frames.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",

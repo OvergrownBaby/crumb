@@ -73,37 +73,55 @@ export async function ingestUrl(
     }
 
     const nameNorm = normalizeName(r.name)
-    const upsertPayload = {
-      name: r.name,
-      name_local: r.nameLocal ?? null,
-      name_normalized: nameNorm,
-      city: r.city,
-      country: r.country,
-      lat: geo.lat,
-      lng: geo.lng,
-      cuisine: r.cuisine ?? null,
-      price_level: r.priceLevel ?? geo.priceLevel ?? null,
-      places_id: geo.placesId,
-      photo_name: geo.photoName ?? null,
+
+    // De-dup by places_id FIRST — Gemini sometimes outputs the same place
+    // with two different names (e.g. "Shi Fu Noodle House" + "Shi Fu Wantan
+    // Mee Restaurant"). Both geocoded to the same Place ID. If we already
+    // know that places_id, reuse the existing restaurant row.
+    let restaurantId: string | null = null
+    if (geo.placesId) {
+      const { data: existing } = await sb
+        .from('restaurants')
+        .select('id')
+        .eq('places_id', geo.placesId)
+        .maybeSingle()
+      if (existing) restaurantId = existing.id
     }
 
-    const { data: restaurantRow, error: rErr } = await sb
-      .from('restaurants')
-      .upsert(upsertPayload, { onConflict: 'name_normalized,city,country' })
-      .select('id')
-      .single()
+    if (!restaurantId) {
+      const upsertPayload = {
+        name: r.name,
+        name_local: r.nameLocal ?? null,
+        name_normalized: nameNorm,
+        city: r.city,
+        country: r.country,
+        lat: geo.lat,
+        lng: geo.lng,
+        cuisine: r.cuisine ?? null,
+        price_level: r.priceLevel ?? geo.priceLevel ?? null,
+        places_id: geo.placesId,
+        photo_name: geo.photoName ?? null,
+      }
 
-    if (rErr || !restaurantRow) {
-      console.warn(`restaurant upsert failed for ${r.name}:`, rErr?.message)
-      continue
+      const { data: restaurantRow, error: rErr } = await sb
+        .from('restaurants')
+        .upsert(upsertPayload, { onConflict: 'name_normalized,city,country' })
+        .select('id')
+        .single()
+
+      if (rErr || !restaurantRow) {
+        console.warn(`restaurant upsert failed for ${r.name}:`, rErr?.message)
+        continue
+      }
+      restaurantId = restaurantRow.id
+      restaurantsAdded++
     }
-    restaurantsAdded++
 
     const { error: mErr } = await sb
       .from('mentions')
       .upsert(
         {
-          restaurant_id: restaurantRow.id,
+          restaurant_id: restaurantId,
           video_id: videoId,
           dish: r.dish ?? null,
           quote: r.quote,

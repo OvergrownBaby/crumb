@@ -26,10 +26,11 @@ For each restaurant you find:
 - "priceLevel": integer 1-4 ($ to $$$$), only if clearly indicated, else omit.
 - "dish": the signature dish or what the creator ate, if mentioned.
 - "quote": a VERBATIM substring from the source (the transcript or article text) that names or strongly identifies this restaurant. This is critical: the quote MUST appear character-for-character in the source. Do not paraphrase. Pick the most identifying ~1-2 sentences (under 300 chars).
-- "timestampSec": for videos, the timestamp in seconds where this place is discussed. Look at the timecodes in the transcript.
+- "timestampSec": for videos, the timestamp in seconds where this place is discussed. ONLY include this if you are highly confident — if you cannot precisely locate the moment in the video, OMIT this field entirely. Never guess or estimate. A wrong timestamp is worse than no timestamp.
 
 Rules:
 - Only include actual named restaurants/cafes/stalls. Skip dish-only mentions, generic cuisine references, market descriptions without a specific eatery name.
+- If the same restaurant is referred to by multiple slightly-different names in the source (e.g. "Hing Kee" / "Hing Kee Seafood"), output ONE entry under the most complete name.
 - If the creator describes a place but never gives a name, you may include it with a descriptive name like "Unnamed dim sum stall (Mong Kok)" — but the quote must still be verbatim from the source.
 - If you can't find ANY restaurants, return {"restaurants": []}.
 - The quote is non-negotiable. If you can't quote the source verbatim, omit the restaurant.
