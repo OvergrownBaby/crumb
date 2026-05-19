@@ -78,6 +78,7 @@ export function AtlasMap({
       zoom: initZoom,
       attributionControl: { compact: true },
       interactive,
+      renderWorldCopies: false,
     })
 
     if (interactive) {
@@ -110,27 +111,31 @@ export function AtlasMap({
         continue
       }
 
-      const el = document.createElement('button')
-      el.type = 'button'
-      el.className = 'fm-marker'
-      el.title = r.name
-      // staggered animation delay so pulses don't sync
-      const delay = ((parseInt(r.id.replace(/\D/g, '').slice(-2) || '0', 10)) % 24) / 10
       const order = numbered && routeOrder ? routeOrder.indexOf(r.id) + 1 : 0
       const badge = order > 0 ? `<span class="fm-marker-num">${order}</span>` : ''
+
+      // If a selection handler is wired, use a button. Otherwise default to
+      // a link that navigates to the place detail page — keeps every map
+      // view's pins clickable without forcing every caller to wire onSelect.
+      const el = onSelect
+        ? document.createElement('button')
+        : document.createElement('a')
+      if (el instanceof HTMLButtonElement) el.type = 'button'
+      if (el instanceof HTMLAnchorElement) el.href = `/p/${r.id}`
+      el.className = 'fm-marker'
+      el.title = r.name
       el.innerHTML = `
-        <span class="fm-marker-pin">
-          <span class="fm-marker-pulse" style="animation-delay:${delay}s"></span>
-          <span class="fm-marker-pin-body">${badge}</span>
-        </span>
+        <span class="fm-marker-pin">${badge}</span>
         <span class="fm-marker-label">${escapeHtml(r.name)}</span>
       `
-      el.addEventListener('click', (e) => {
-        e.stopPropagation()
-        onSelect?.(r.id)
-      })
+      if (onSelect) {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation()
+          onSelect(r.id)
+        })
+      }
 
-      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat([r.lng, r.lat])
         .addTo(map)
       markersRef.current.set(r.id, marker)
