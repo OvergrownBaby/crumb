@@ -13,7 +13,7 @@ export default async function HomePage() {
   return (
     <div className="flex-1">
       {/* Composer-first. Tagline lives below as a small line, not a hero block. */}
-      <section className="mx-auto max-w-3xl px-4 sm:px-6 pt-10 sm:pt-14 pb-8">
+      <section className="mx-auto max-w-5xl px-4 sm:px-6 pt-10 sm:pt-14 pb-8">
         <div className="text-center sm:text-left">
           <h1 className="fm-display text-2xl sm:text-3xl leading-tight text-[var(--foreground-soft)]">
             Drop a food video, get a map.

@@ -59,8 +59,9 @@ export function SubmitForm({
   const showLive = state.status !== 'idle'
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <form onSubmit={handleSubmit}>
+    <div className="w-full">
+      <div className="max-w-2xl mx-auto">
+        <form onSubmit={handleSubmit}>
         <label
           htmlFor="url"
           className="block text-sm font-medium text-[var(--muted)] mb-2"
@@ -139,20 +140,25 @@ export function SubmitForm({
             {hasUserKey ? 'using your key' : 'use your own key'}
           </button>
         </div>
-      </form>
+        </form>
 
-      <ByokModal
-        open={keyModalOpen}
-        onClose={() => setKeyModalOpen(false)}
-        onChange={setHasUserKey}
-      />
+        <ByokModal
+          open={keyModalOpen}
+          onClose={() => setKeyModalOpen(false)}
+          onChange={setHasUserKey}
+        />
+      </div>
 
       {showLive && (
-        <LiveExtractionView
-          state={state}
-          onReset={handleReset}
-          onForceRefresh={handleForceRefresh}
-        />
+        <div className="mt-6">
+          <LiveExtractionView
+            state={state}
+            onReset={handleReset}
+            onForceRefresh={handleForceRefresh}
+            onOpenKeyModal={() => setKeyModalOpen(true)}
+            hasUserKey={hasUserKey}
+          />
+        </div>
       )}
     </div>
   )

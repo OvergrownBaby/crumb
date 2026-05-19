@@ -9,19 +9,36 @@ import { SourceBadge } from './source-badge'
 import { photoUrl } from '@/lib/photo'
 import { formatTimestamp, cn } from '@/lib/utils'
 import type { Restaurant, SourceKind } from '@/lib/types'
-import { Loader2, X, ArrowRight, ExternalLink, MapPin } from 'lucide-react'
+import { Loader2, X, ArrowRight, ExternalLink, MapPin, Key, AlertTriangle } from 'lucide-react'
 
 export function LiveExtractionView({
   state,
   onReset,
   onForceRefresh,
+  onOpenKeyModal,
+  hasUserKey,
 }: {
   state: StreamState
   onReset: () => void
   onForceRefresh: () => void
+  onOpenKeyModal?: () => void
+  hasUserKey?: boolean
 }) {
   const elapsed = useElapsed(state.startedAt, state.finishedAt)
   const geocoded = state.restaurants.filter((r) => r.lat != null && r.lng != null)
+
+  // Live numbering: every visible row gets the position it'll have on the map
+  // once geocoded. Skipped rows show an X instead of a number, so list pin #N
+  // always matches map pin #N regardless of skip order.
+  const numberByClientId = useMemo(() => {
+    const m = new Map<string, number>()
+    let n = 0
+    for (const r of state.restaurants) {
+      if (r.skipped) continue
+      m.set(r.clientId, ++n)
+    }
+    return m
+  }, [state.restaurants])
 
   const mapRestaurants: Restaurant[] = useMemo(
     () =>
@@ -39,6 +56,11 @@ export function LiveExtractionView({
         mentionCount: 1,
         topCreators: [],
       })),
+    [geocoded]
+  )
+
+  const routeOrder = useMemo(
+    () => geocoded.map((r) => r.id!).filter(Boolean),
     [geocoded]
   )
 
@@ -82,12 +104,12 @@ export function LiveExtractionView({
         </p>
       )}
 
-      {/* Restaurants column + mini-map */}
+      {/* Restaurants column + map — 50/50 on lg+ */}
       {state.restaurants.length > 0 && (
-        <div className="grid lg:grid-cols-[1fr_360px] gap-0">
-          <ol className="divide-y divide-[var(--border)]">
+        <div className="grid lg:grid-cols-2 gap-0">
+          <ol className="divide-y divide-[var(--border)] lg:max-h-[640px] lg:overflow-y-auto">
             <AnimatePresence initial={false}>
-              {state.restaurants.map((r, idx) => (
+              {state.restaurants.map((r) => (
                 <motion.li
                   key={r.clientId}
                   layout
@@ -97,15 +119,24 @@ export function LiveExtractionView({
                   transition={{ type: 'spring', stiffness: 220, damping: 28 }}
                   className={cn('p-4', r.skipped && 'opacity-50')}
                 >
-                  <ArrivalCard arrival={r} index={idx} videoUrl={state.video?.url ?? ''} />
+                  <ArrivalCard
+                    arrival={r}
+                    number={numberByClientId.get(r.clientId)}
+                    videoUrl={state.video?.url ?? ''}
+                  />
                 </motion.li>
               ))}
             </AnimatePresence>
           </ol>
 
-          <div className="lg:border-l border-t lg:border-t-0 border-[var(--border)] bg-[var(--muted-soft)]/40 h-[280px] lg:h-[480px] lg:self-start relative">
+          <div className="lg:border-l border-t lg:border-t-0 border-[var(--border)] bg-[var(--muted-soft)]/40 h-[360px] lg:h-[640px] lg:self-start relative">
             {mapRestaurants.length > 0 ? (
-              <AtlasMap restaurants={mapRestaurants} className="absolute inset-0" />
+              <AtlasMap
+                restaurants={mapRestaurants}
+                numbered
+                routeOrder={routeOrder}
+                className="absolute inset-0"
+              />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-xs text-[var(--muted)] italic">
                 Pins land here as places are geocoded
@@ -125,10 +156,13 @@ export function LiveExtractionView({
 
       {/* Failed state */}
       {state.status === 'failed' && (
-        <div className="p-5 text-sm text-red-700 border-t border-[var(--border)]">
-          <div className="font-medium mb-1">Something went wrong</div>
-          <div className="text-xs">{state.error}</div>
-        </div>
+        <ErrorPanel
+          error={state.error}
+          hasUserKey={hasUserKey}
+          onOpenKeyModal={onOpenKeyModal}
+          onRetry={onForceRefresh}
+          onReset={onReset}
+        />
       )}
 
       {/* Complete CTA */}
@@ -180,11 +214,11 @@ function phaseLabelFor(state: StreamState): string {
 
 function ArrivalCard({
   arrival,
-  index,
+  number,
   videoUrl,
 }: {
   arrival: RestaurantArrival
-  index: number
+  number: number | undefined
   videoUrl: string
 }) {
   const photo = photoUrl(arrival.photoName, 200)
@@ -214,9 +248,15 @@ function ArrivalCard({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--accent)] text-white text-[10px] font-bold fm-num">
-            {index + 1}
-          </span>
+          {arrival.skipped ? (
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--muted-soft)] text-[var(--muted)] text-[10px] font-bold fm-num">
+              <X className="w-3 h-3" />
+            </span>
+          ) : (
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--accent)] text-white text-[10px] font-bold fm-num">
+              {number ?? '·'}
+            </span>
+          )}
           {arrival.id ? (
             <Link
               href={`/p/${arrival.id}`}
@@ -294,6 +334,114 @@ function ScannedThumbnail({
           {sourceKind}
         </div>
       </div>
+    </div>
+  )
+}
+
+type ErrorKind = 'quota' | 'network' | 'unknown'
+
+function classifyError(raw: string | null): {
+  kind: ErrorKind
+  title: string
+  body: string
+  retrySec: number | null
+} {
+  const msg = (raw ?? '').toString()
+  if (
+    /RESOURCE_EXHAUSTED|free_tier_requests|exceeded your current quota|quota\b|\b429\b/i.test(
+      msg
+    )
+  ) {
+    const m = msg.match(/retry in\s*(\d+(?:\.\d+)?)\s*s/i)
+    const retrySec = m ? Math.ceil(parseFloat(m[1])) : null
+    return {
+      kind: 'quota',
+      title: 'Free Gemini quota hit',
+      body: retrySec
+        ? `The shared free key has run out for the moment. Try again in ~${retrySec}s, or add your own Gemini key for unlimited extractions.`
+        : 'The shared free Gemini quota has run out. Add your own Gemini API key for unlimited extractions — it stays in your browser.',
+      retrySec,
+    }
+  }
+  if (/fetch failed|network|ECONN|ENOTFOUND|timeout/i.test(msg)) {
+    return {
+      kind: 'network',
+      title: 'Network hiccup',
+      body: 'Could not reach the extraction service. Check your connection and try again.',
+      retrySec: null,
+    }
+  }
+  return {
+    kind: 'unknown',
+    title: 'Something went wrong',
+    body: msg.slice(0, 280) || 'No further details.',
+    retrySec: null,
+  }
+}
+
+function ErrorPanel({
+  error,
+  hasUserKey,
+  onOpenKeyModal,
+  onRetry,
+  onReset,
+}: {
+  error: string | null
+  hasUserKey?: boolean
+  onOpenKeyModal?: () => void
+  onRetry: () => void
+  onReset: () => void
+}) {
+  const info = classifyError(error)
+  return (
+    <div className="p-5 border-t border-[var(--border)]">
+      <div className="flex items-start gap-3">
+        <div className="shrink-0 w-9 h-9 rounded-full bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center">
+          <AlertTriangle className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold">{info.title}</div>
+          <div className="mt-1 text-sm text-[var(--foreground-soft)]">{info.body}</div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {info.kind === 'quota' && !hasUserKey && onOpenKeyModal && (
+          <button
+            type="button"
+            onClick={onOpenKeyModal}
+            className="fm-btn inline-flex items-center gap-1.5 bg-[var(--accent)] text-white font-semibold px-4 py-2 rounded-xl text-sm hover:bg-[var(--accent-hover)]"
+          >
+            <Key className="w-4 h-4" />
+            Add your own key
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onRetry}
+          className="fm-btn inline-flex items-center gap-1.5 border border-[var(--border)] hover:border-[var(--foreground)] px-4 py-2 rounded-xl text-sm font-medium"
+        >
+          Retry
+        </button>
+        <button
+          type="button"
+          onClick={onReset}
+          className="fm-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-[var(--muted)] hover:text-[var(--foreground)]"
+        >
+          Start over
+        </button>
+      </div>
+
+      {info.kind === 'unknown' && error && error.length > 280 && (
+        <details className="mt-4 text-xs text-[var(--muted)]">
+          <summary className="cursor-pointer hover:text-[var(--foreground)]">
+            Show full error
+          </summary>
+          <pre className="mt-2 whitespace-pre-wrap break-all bg-[var(--muted-soft)] p-3 rounded-lg font-mono">
+            {error}
+          </pre>
+        </details>
+      )}
     </div>
   )
 }
