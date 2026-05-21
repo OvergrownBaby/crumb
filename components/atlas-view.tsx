@@ -340,9 +340,12 @@ export function AtlasView({ restaurants, creators }: Props) {
           onSelect={setSelectedId}
           focusedId={focusedId}
           globe
-          // Mobile: shift focal pin UP by ~25% of viewport (half of the sheet's
-          // 50dvh) so it lands in the visible map area above the sheet.
-          panOffset={isMobile ? [0, -Math.round(viewportH * 0.25)] : undefined}
+          // Mobile: declare the sheet's height as bottom padding so MapLibre
+          // re-centers the globe + every pan into the visible top half.
+          bottomInset={isMobile ? Math.round(viewportH * (sheetMode === 'full' ? 0.9 : 0.5)) : 0}
+          // Scroll-focus zooms in to neighborhood level so the user sees the
+          // pin in context, not lost on a global view.
+          focusZoom={13}
           className="absolute inset-0"
         />
 

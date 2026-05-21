@@ -21,13 +21,16 @@ type Props = {
   // Useful when pins span multiple continents.
   globe?: boolean
   // Scroll-driven focus: when set, the map smoothly pans to this pin without
-  // zooming or marking the pin as selected. Used by the mobile bottom-sheet
-  // to make the map track whichever restaurant is currently in view.
+  // marking it as selected. Used by the mobile bottom-sheet to make the map
+  // track whichever restaurant is currently in view.
   focusedId?: string | null
-  // Pixel offset applied to all programmatic pan/fly operations. Use
-  // [0, -N] on mobile to push the focal point UP so it's not hidden behind
-  // the bottom sheet (negative Y = focal pin appears higher on screen).
-  panOffset?: [number, number]
+  // Pixel padding applied to the map's camera math. Use bottomInset on mobile
+  // to declare "the bottom N pixels are covered by something" — MapLibre then
+  // re-centers the entire view (globe and all) into the un-padded area.
+  bottomInset?: number
+  // Zoom level used when a focusedId is set (scroll-driven). Default = current
+  // zoom (just pan, no zoom). Pass e.g. 13 for "show city around pin".
+  focusZoom?: number
 }
 
 const TILE_STYLE: maplibregl.StyleSpecification = {
@@ -71,7 +74,8 @@ export function AtlasMap({
   numbered = false,
   globe = false,
   focusedId,
-  panOffset,
+  bottomInset = 0,
+  focusZoom,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MLMap | null>(null)
@@ -230,6 +234,16 @@ export function AtlasMap({
     }
   }, [restaurants, onSelect, selectedId, numbered])
 
+  // Camera padding — declares "the bottom N pixels are covered" so every
+  // pan/fly/fitBounds re-centers the view (and the globe itself) into the
+  // remaining visible area. One source of truth instead of offsetting every
+  // camera call.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    map.setPadding({ top: 0, bottom: bottomInset, left: 0, right: 0 })
+  }, [bottomInset])
+
   // Highlight selected
   useEffect(() => {
     for (const [id, marker] of markersRef.current) {
@@ -237,23 +251,15 @@ export function AtlasMap({
       if (id === selectedId) {
         el.classList.add('fm-marker-selected')
         const r = restaurants.find((x) => x.id === id)
-        if (r)
-          mapRef.current?.flyTo({
-            center: [r.lng, r.lat],
-            zoom: 15,
-            duration: 600,
-            offset: panOffset ?? [0, 0],
-          })
+        if (r) mapRef.current?.flyTo({ center: [r.lng, r.lat], zoom: 15, duration: 600 })
       } else {
         el.classList.remove('fm-marker-selected')
       }
     }
-  }, [selectedId, restaurants, panOffset])
+  }, [selectedId, restaurants])
 
-  // Scroll-driven focus: gentle pan to the pin without zoom-in or selection
-  // styling. Used when the mobile sheet scrolls a new restaurant into view.
-  // panOffset shifts the focal point up by N pixels so it's not hidden behind
-  // the bottom sheet on mobile.
+  // Scroll-driven focus: pan + zoom in to the pin without marking it selected.
+  // Used when the mobile sheet scrolls a new restaurant into view.
   useEffect(() => {
     if (!focusedId || !mapRef.current) return
     if (focusedId === selectedId) return // selectedId effect already flew there
@@ -261,10 +267,10 @@ export function AtlasMap({
     if (!r) return
     mapRef.current.easeTo({
       center: [r.lng, r.lat],
-      duration: 450,
-      offset: panOffset ?? [0, 0],
+      zoom: focusZoom,
+      duration: 500,
     })
-  }, [focusedId, restaurants, selectedId, panOffset])
+  }, [focusedId, restaurants, selectedId, focusZoom])
 
   return (
     <div className={className}>
