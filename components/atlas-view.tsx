@@ -75,6 +75,31 @@ export function AtlasView({ restaurants, creators }: Props) {
   const [sheetDragging, setSheetDragging] = useState(false)
   const sheetStartYRef = useRef(0)
 
+  // Scroll-driven map focus: as the list scrolls, the topmost-visible
+  // restaurant's id is set as focusedId and the map gently pans to its pin.
+  // Uses the scroll event's target as the container reference so the same
+  // handler works on both the desktop aside list and the mobile sheet list
+  // (only one is visible at a time — the other has display:none).
+  const [focusedId, setFocusedId] = useState<string | null>(null)
+  const scrollRafRef = useRef<number | null>(null)
+  function handleListScroll(e: React.UIEvent<HTMLDivElement>) {
+    const container = e.currentTarget
+    if (scrollRafRef.current != null) return
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = null
+      const containerTop = container.getBoundingClientRect().top
+      const items = container.querySelectorAll<HTMLElement>('[data-restaurant-id]')
+      for (const item of items) {
+        const rect = item.getBoundingClientRect()
+        if (rect.bottom > containerTop + 8) {
+          const id = item.dataset.restaurantId
+          if (id && id !== focusedId) setFocusedId(id)
+          return
+        }
+      }
+    })
+  }
+
   function handleSheetTouchStart(e: React.TouchEvent) {
     setSheetDragging(true)
     sheetStartYRef.current = e.touches[0].clientY
@@ -159,6 +184,7 @@ export function AtlasView({ restaurants, creators }: Props) {
       {filtered.map((r) => (
         <li
           key={r.id}
+          data-restaurant-id={r.id}
           className="relative"
           onMouseEnter={(e) => {
             if (!r.primaryVideo?.thumbnailUrl) return
@@ -223,7 +249,9 @@ export function AtlasView({ restaurants, creators }: Props) {
       <aside className="hidden lg:flex lg:w-80 xl:w-96 border-r border-[var(--border)] bg-[var(--background)] flex-col">
         {sidebarHeader}
         {filterRail}
-        <div className="flex-1 overflow-y-auto">{restaurantList}</div>
+        <div onScroll={handleListScroll} className="flex-1 overflow-y-auto">
+          {restaurantList}
+        </div>
       </aside>
 
       {/* Hover preview — fixed-position so it escapes the list's overflow clip */}
@@ -235,6 +263,7 @@ export function AtlasView({ restaurants, creators }: Props) {
           restaurants={filtered}
           selectedId={effectiveSelectedId}
           onSelect={setSelectedId}
+          focusedId={focusedId}
           globe
           className="absolute inset-0"
         />
@@ -282,7 +311,10 @@ export function AtlasView({ restaurants, creators }: Props) {
 
         {sidebarHeader}
         {filterRail}
-        <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y">
+        <div
+          onScroll={handleListScroll}
+          className="flex-1 overflow-y-auto overscroll-contain touch-pan-y"
+        >
           {restaurantList}
         </div>
       </div>

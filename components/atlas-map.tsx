@@ -20,6 +20,10 @@ type Props = {
   // Render as a 3D globe (Radio Garden style) instead of flat Mercator.
   // Useful when pins span multiple continents.
   globe?: boolean
+  // Scroll-driven focus: when set, the map smoothly pans to this pin without
+  // zooming or marking the pin as selected. Used by the mobile bottom-sheet
+  // to make the map track whichever restaurant is currently in view.
+  focusedId?: string | null
 }
 
 const TILE_STYLE: maplibregl.StyleSpecification = {
@@ -62,6 +66,7 @@ export function AtlasMap({
   className,
   numbered = false,
   globe = false,
+  focusedId,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MLMap | null>(null)
@@ -233,6 +238,16 @@ export function AtlasMap({
       }
     }
   }, [selectedId, restaurants])
+
+  // Scroll-driven focus: gentle pan to the pin without zoom-in or selection
+  // styling. Used when the mobile sheet scrolls a new restaurant into view.
+  useEffect(() => {
+    if (!focusedId || !mapRef.current) return
+    if (focusedId === selectedId) return // selectedId effect already flew there
+    const r = restaurants.find((x) => x.id === focusedId)
+    if (!r) return
+    mapRef.current.easeTo({ center: [r.lng, r.lat], duration: 450 })
+  }, [focusedId, restaurants, selectedId])
 
   return (
     <div className={className}>
