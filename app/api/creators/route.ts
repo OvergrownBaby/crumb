@@ -12,22 +12,35 @@ export async function GET() {
     .from('creators')
     .select(
       `slug, name, platform, avatar_url, url,
-       videos ( id, mentions ( restaurant_id ) )`
+       videos ( id, mentions ( restaurants ( id, city ) ) )`
     )
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const out: Creator[] = (rows ?? []).map((c: {
+  type Row = {
     slug: string
     name: string
     platform: string
     avatar_url: string | null
     url: string | null
-    videos: Array<{ id: string; mentions: Array<{ restaurant_id: string }> }>
-  }) => {
+    videos: Array<{
+      id: string
+      mentions: Array<{ restaurants: { id: string; city: string } | null }>
+    }>
+  }
+  const typedRows = (rows ?? []) as unknown as Row[]
+
+  const out: Creator[] = typedRows.map((c) => {
     const videos = c.videos ?? []
     const restaurantSet = new Set<string>()
-    for (const v of videos) for (const m of v.mentions ?? []) restaurantSet.add(m.restaurant_id)
+    const citySet = new Set<string>()
+    for (const v of videos) {
+      for (const m of v.mentions ?? []) {
+        if (!m.restaurants) continue
+        restaurantSet.add(m.restaurants.id)
+        citySet.add(m.restaurants.city)
+      }
+    }
     return {
       slug: c.slug,
       name: c.name,
@@ -36,6 +49,7 @@ export async function GET() {
       url: c.url ?? undefined,
       videoCount: videos.length,
       restaurantCount: restaurantSet.size,
+      cityCount: citySet.size,
     }
   })
 

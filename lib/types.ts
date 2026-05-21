@@ -21,6 +21,8 @@ export type Creator = {
   url?: string
   videoCount: number
   restaurantCount: number
+  /** Distinct cities across all of this creator's mentioned restaurants. */
+  cityCount?: number
 }
 
 export type Source = {
