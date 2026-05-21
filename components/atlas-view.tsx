@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Restaurant, RestaurantVideo, Mention, Creator } from '@/lib/types'
 import { AtlasMap } from './atlas-map'
 import { CreatorAvatar } from './creator-avatar'
@@ -69,141 +69,168 @@ export function AtlasView({ restaurants, creators }: Props) {
   // Reset mentions when selection clears (derive-not-effect would mix state and async fetch awkwardly).
   const visibleMentions = effectiveSelectedId ? selectedMentions : []
 
-  return (
-    <div className="flex-1 flex flex-col-reverse lg:flex-row min-h-0">
-      {/* Sidebar — under the map on mobile (flex-col-reverse), left on desktop */}
-      <aside className="lg:w-80 xl:w-96 max-h-[60vh] lg:max-h-none border-t lg:border-t-0 lg:border-r border-[var(--border)] bg-[var(--background)] flex flex-col">
-        <div className="p-5 border-b border-[var(--border)]">
-          <div className="fm-label">Browse</div>
-          <h1 className="fm-display text-2xl mt-1">Atlas</h1>
-          <p className="text-sm text-[var(--muted)] mt-1">
-            <span className="font-semibold text-[var(--foreground)]">{filtered.length}</span>{' '}
-            {filtered.length === 1 ? 'restaurant' : 'restaurants'}
-            {activeCreator
-              ? ` from ${creators.find((c) => c.slug === activeCreator)?.name}`
-              : ' from everyone'}
-          </p>
-        </div>
+  // Mobile bottom-sheet state — qilingo-style two-snap (half/full) drag.
+  const [sheetMode, setSheetMode] = useState<'half' | 'full'>('half')
+  const [sheetDragY, setSheetDragY] = useState(0)
+  const [sheetDragging, setSheetDragging] = useState(false)
+  const sheetStartYRef = useRef(0)
 
-        {/* Filter rail */}
-        <div className="p-5 space-y-3 border-b border-[var(--border)]">
-          <div className="flex items-center justify-between">
-            <span className="fm-label">Creator</span>
-            {activeCreator && (
-              <button
-                onClick={() => setActiveCreator(null)}
-                className="text-[11px] text-[var(--accent)] hover:underline font-medium"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-1.5">
+  function handleSheetTouchStart(e: React.TouchEvent) {
+    setSheetDragging(true)
+    sheetStartYRef.current = e.touches[0].clientY
+    setSheetDragY(0)
+  }
+  function handleSheetTouchMove(e: React.TouchEvent) {
+    if (!sheetDragging) return
+    const dy = e.touches[0].clientY - sheetStartYRef.current
+    setSheetDragY(dy)
+  }
+  function handleSheetTouchEnd() {
+    if (!sheetDragging) return
+    const threshold = 60
+    if (sheetMode === 'half' && sheetDragY < -threshold) setSheetMode('full')
+    else if (sheetMode === 'full' && sheetDragY > threshold) setSheetMode('half')
+    setSheetDragY(0)
+    setSheetDragging(false)
+  }
+
+  const sidebarHeader = (
+    <div className="p-5 border-b border-[var(--border)]">
+      <div className="fm-label">Browse</div>
+      <h1 className="fm-display text-2xl mt-1">Atlas</h1>
+      <p className="text-sm text-[var(--muted)] mt-1">
+        <span className="font-semibold text-[var(--foreground)]">{filtered.length}</span>{' '}
+        {filtered.length === 1 ? 'restaurant' : 'restaurants'}
+        {activeCreator
+          ? ` from ${creators.find((c) => c.slug === activeCreator)?.name}`
+          : ' from everyone'}
+      </p>
+    </div>
+  )
+
+  const filterRail = (
+    <div className="p-5 space-y-3 border-b border-[var(--border)]">
+      <div className="flex items-center justify-between">
+        <span className="fm-label">Creator</span>
+        {activeCreator && (
+          <button
+            onClick={() => setActiveCreator(null)}
+            className="text-[11px] text-[var(--accent)] hover:underline font-medium"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          onClick={() => setActiveCreator(null)}
+          className={cn(
+            'px-3 py-1 rounded-full text-xs font-medium ring-1 ring-inset transition',
+            !activeCreator
+              ? 'bg-[var(--foreground)] text-white ring-[var(--foreground)]'
+              : 'bg-white text-[var(--foreground)] ring-[var(--border)] hover:ring-[var(--foreground)]/30'
+          )}
+        >
+          Everyone
+        </button>
+        {creators
+          .filter((c) => c.restaurantCount > 0)
+          .map((c) => (
             <button
-              onClick={() => setActiveCreator(null)}
+              key={c.slug}
+              onClick={() => setActiveCreator(c.slug)}
               className={cn(
-                'px-3 py-1 rounded-full text-xs font-medium ring-1 ring-inset transition',
-                !activeCreator
+                'inline-flex items-center gap-1.5 pl-1 pr-3 py-1 rounded-full text-xs font-medium ring-1 ring-inset transition',
+                activeCreator === c.slug
                   ? 'bg-[var(--foreground)] text-white ring-[var(--foreground)]'
                   : 'bg-white text-[var(--foreground)] ring-[var(--border)] hover:ring-[var(--foreground)]/30'
               )}
             >
-              Everyone
+              <CreatorAvatar creator={c} size="sm" link={false} />
+              {c.name}
             </button>
-            {creators
-              .filter((c) => c.restaurantCount > 0)
-              .map((c) => (
-                <button
-                  key={c.slug}
-                  onClick={() => setActiveCreator(c.slug)}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 pl-1 pr-3 py-1 rounded-full text-xs font-medium ring-1 ring-inset transition',
-                    activeCreator === c.slug
-                      ? 'bg-[var(--foreground)] text-white ring-[var(--foreground)]'
-                      : 'bg-white text-[var(--foreground)] ring-[var(--border)] hover:ring-[var(--foreground)]/30'
-                  )}
-                >
-                  <CreatorAvatar creator={c} size="sm" link={false} />
-                  {c.name}
-                </button>
-              ))}
-          </div>
+          ))}
+      </div>
+    </div>
+  )
 
-        </div>
-
-        {/* Restaurant list */}
-        <div className="flex-1 overflow-y-auto p-2">
-          <ul className="space-y-1">
-            {filtered.map((r) => (
-              <li
-                key={r.id}
-                className="relative"
-                onMouseEnter={(e) => {
-                  if (!r.primaryVideo?.thumbnailUrl) return
-                  const rect = e.currentTarget.getBoundingClientRect()
-                  setHover({
-                    video: r.primaryVideo,
-                    top: rect.top + rect.height / 2,
-                    left: rect.right + 12,
-                  })
-                }}
-                onMouseLeave={() => setHover(null)}
-              >
-                <button
-                  onClick={() => setSelectedId(r.id)}
-                  className={cn(
-                    'w-full text-left px-3 py-2.5 rounded-xl transition',
-                    effectiveSelectedId === r.id
-                      ? 'bg-[var(--accent-soft)] ring-1 ring-inset ring-[var(--accent)]/30'
-                      : 'hover:bg-[var(--muted-soft)]'
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="font-semibold text-sm truncate">{r.name}</div>
-                      {r.nameLocal && (
-                        <div className="text-xs text-[var(--muted)] truncate">
-                          {r.nameLocal}
-                        </div>
-                      )}
-                      <div className="mt-0.5 text-[11px] text-[var(--muted)] truncate">
-                        {r.cuisine}
-                      </div>
-                      {r.primaryVideo && (
-                        <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--muted)] min-w-0">
-                          <SourceBadge kind={r.primaryVideo.sourceKind} size="sm" />
-                          <span className="truncate">
-                            {r.primaryVideo.title ?? r.primaryVideo.channelName ?? 'Source video'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      {r.priceLevel && (
-                        <span className="text-[10px] text-[var(--muted)] font-medium">
-                          {priceDots(r.priceLevel)}
-                        </span>
-                      )}
-                      <div className="flex -space-x-1.5">
-                        {r.topCreators.slice(0, 3).map((c) => (
-                          <CreatorAvatar key={c.slug} creator={c} size="sm" link={false} />
-                        ))}
-                      </div>
-                    </div>
+  const restaurantList = (
+    <ul className="space-y-1 p-2">
+      {filtered.map((r) => (
+        <li
+          key={r.id}
+          className="relative"
+          onMouseEnter={(e) => {
+            if (!r.primaryVideo?.thumbnailUrl) return
+            const rect = e.currentTarget.getBoundingClientRect()
+            setHover({
+              video: r.primaryVideo,
+              top: rect.top + rect.height / 2,
+              left: rect.right + 12,
+            })
+          }}
+          onMouseLeave={() => setHover(null)}
+        >
+          <button
+            onClick={() => setSelectedId(r.id)}
+            className={cn(
+              'w-full text-left px-3 py-2.5 rounded-xl transition',
+              effectiveSelectedId === r.id
+                ? 'bg-[var(--accent-soft)] ring-1 ring-inset ring-[var(--accent)]/30'
+                : 'hover:bg-[var(--muted-soft)]'
+            )}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="font-semibold text-sm truncate">{r.name}</div>
+                {r.nameLocal && (
+                  <div className="text-xs text-[var(--muted)] truncate">{r.nameLocal}</div>
+                )}
+                <div className="mt-0.5 text-[11px] text-[var(--muted)] truncate">
+                  {r.cuisine}
+                </div>
+                {r.primaryVideo && (
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--muted)] min-w-0">
+                    <SourceBadge kind={r.primaryVideo.sourceKind} size="sm" />
+                    <span className="truncate">
+                      {r.primaryVideo.title ?? r.primaryVideo.channelName ?? 'Source video'}
+                    </span>
                   </div>
-                </button>
+                )}
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                {r.priceLevel && (
+                  <span className="text-[10px] text-[var(--muted)] font-medium">
+                    {priceDots(r.priceLevel)}
+                  </span>
+                )}
+                <div className="flex -space-x-1.5">
+                  {r.topCreators.slice(0, 3).map((c) => (
+                    <CreatorAvatar key={c.slug} creator={c} size="sm" link={false} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
 
-              </li>
-            ))}
-          </ul>
-        </div>
+  return (
+    <div className="flex-1 flex flex-row min-h-0 relative">
+      {/* Sidebar — desktop only */}
+      <aside className="hidden lg:flex lg:w-80 xl:w-96 border-r border-[var(--border)] bg-[var(--background)] flex-col">
+        {sidebarHeader}
+        {filterRail}
+        <div className="flex-1 overflow-y-auto">{restaurantList}</div>
       </aside>
 
       {/* Hover preview — fixed-position so it escapes the list's overflow clip */}
       {hover && <VideoHoverPreview video={hover.video} top={hover.top} left={hover.left} />}
 
       {/* Map */}
-      <div className="flex-1 relative min-h-[55vh] lg:min-h-0">
+      <div className="flex-1 relative">
         <AtlasMap
           restaurants={filtered}
           selectedId={effectiveSelectedId}
@@ -212,7 +239,7 @@ export function AtlasView({ restaurants, creators }: Props) {
           className="absolute inset-0"
         />
 
-        {/* Detail panel */}
+        {/* Detail panel — floats over map, hides under sheet on mobile (z-30 vs z-40) */}
         {selected && (
           <DetailPanel
             restaurant={selected}
@@ -221,6 +248,43 @@ export function AtlasView({ restaurants, creators }: Props) {
             onClose={() => setSelectedId(null)}
           />
         )}
+      </div>
+
+      {/* Mobile bottom sheet — qilingo-style drag between half (50dvh) and full (90dvh). */}
+      <div
+        className={cn(
+          'lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white rounded-t-2xl shadow-[0_-8px_28px_-8px_rgba(0,0,0,0.18)] flex flex-col touch-none',
+          sheetMode === 'half' ? 'h-[50dvh]' : 'h-[90dvh]'
+        )}
+        style={{
+          transform: sheetDragging
+            ? `translateY(${
+                sheetMode === 'half'
+                  ? Math.max(sheetDragY, -200)
+                  : Math.max(sheetDragY, 0)
+              }px)`
+            : undefined,
+          transition: sheetDragging
+            ? 'none'
+            : 'height 240ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+        }}
+      >
+        {/* Drag handle — touch events live here. */}
+        <div
+          className="shrink-0 pt-2 pb-2 cursor-grab active:cursor-grabbing"
+          onTouchStart={handleSheetTouchStart}
+          onTouchMove={handleSheetTouchMove}
+          onTouchEnd={handleSheetTouchEnd}
+          onClick={() => setSheetMode((m) => (m === 'half' ? 'full' : 'half'))}
+        >
+          <div className="w-10 h-1 rounded-full bg-[var(--border-strong)] mx-auto" />
+        </div>
+
+        {sidebarHeader}
+        {filterRail}
+        <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y">
+          {restaurantList}
+        </div>
       </div>
     </div>
   )
@@ -279,7 +343,7 @@ function DetailPanel({
   )}`
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 lg:left-auto lg:top-4 lg:right-4 lg:bottom-4 lg:w-[420px] bg-[var(--card)] rounded-t-2xl lg:rounded-3xl shadow-[var(--shadow-pop)] border border-[var(--border-strong)] flex flex-col max-h-[60vh] lg:max-h-[calc(100vh-7rem)]">
+    <div className="fixed lg:absolute z-50 inset-x-0 bottom-0 lg:left-auto lg:top-4 lg:right-4 lg:bottom-4 lg:inset-x-auto lg:w-[420px] bg-[var(--card)] rounded-t-2xl lg:rounded-3xl shadow-[var(--shadow-pop)] border border-[var(--border-strong)] flex flex-col max-h-[70dvh] lg:max-h-[calc(100vh-7rem)]">
       <div className="p-5 border-b border-[var(--border)] flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="fm-display text-xl leading-tight">{restaurant.name}</h2>
