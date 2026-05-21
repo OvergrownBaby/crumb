@@ -133,6 +133,66 @@ export function AtlasView({ restaurants, creators }: Props) {
     </div>
   )
 
+  // Compact mobile-only chrome: a single thin row with count + horizontally
+  // scrollable creator chips. ~70px total vs ~200px for the desktop pair,
+  // leaving room in the half-sheet for actual restaurants.
+  const mobileChrome = (
+    <div className="px-4 pt-1 pb-2 border-b border-[var(--border)]">
+      <div className="flex items-center justify-between text-[11px] mb-1.5">
+        <span className="text-[var(--muted)]">
+          <span className="font-semibold text-[var(--foreground)]">{filtered.length}</span>{' '}
+          {filtered.length === 1 ? 'place' : 'places'}
+          {activeCreator && (
+            <>
+              {' · '}
+              <span className="font-semibold text-[var(--foreground)]">
+                {creators.find((c) => c.slug === activeCreator)?.name}
+              </span>
+            </>
+          )}
+        </span>
+        {activeCreator && (
+          <button
+            onClick={() => setActiveCreator(null)}
+            className="text-[11px] text-[var(--accent)] font-medium"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+      <div className="-mx-4 px-4 flex gap-1.5 overflow-x-auto pb-0.5 fm-no-scrollbar">
+        <button
+          onClick={() => setActiveCreator(null)}
+          className={cn(
+            'shrink-0 px-3 py-1 rounded-full text-xs font-medium ring-1 ring-inset transition',
+            !activeCreator
+              ? 'bg-[var(--foreground)] text-white ring-[var(--foreground)]'
+              : 'bg-white text-[var(--foreground)] ring-[var(--border)]'
+          )}
+        >
+          Everyone
+        </button>
+        {creators
+          .filter((c) => c.restaurantCount > 0)
+          .map((c) => (
+            <button
+              key={c.slug}
+              onClick={() => setActiveCreator(c.slug)}
+              className={cn(
+                'shrink-0 inline-flex items-center gap-1.5 pl-1 pr-3 py-1 rounded-full text-xs font-medium ring-1 ring-inset transition',
+                activeCreator === c.slug
+                  ? 'bg-[var(--foreground)] text-white ring-[var(--foreground)]'
+                  : 'bg-white text-[var(--foreground)] ring-[var(--border)]'
+              )}
+            >
+              <CreatorAvatar creator={c} size="sm" link={false} />
+              {c.name}
+            </button>
+          ))}
+      </div>
+    </div>
+  )
+
   const filterRail = (
     <div className="p-5 space-y-3 border-b border-[var(--border)]">
       <div className="flex items-center justify-between">
@@ -300,17 +360,16 @@ export function AtlasView({ restaurants, creators }: Props) {
       >
         {/* Drag handle — touch events live here. */}
         <div
-          className="shrink-0 pt-2 pb-2 cursor-grab active:cursor-grabbing"
+          className="shrink-0 pt-2.5 pb-2 cursor-grab active:cursor-grabbing"
           onTouchStart={handleSheetTouchStart}
           onTouchMove={handleSheetTouchMove}
           onTouchEnd={handleSheetTouchEnd}
           onClick={() => setSheetMode((m) => (m === 'half' ? 'full' : 'half'))}
         >
-          <div className="w-10 h-1 rounded-full bg-[var(--border-strong)] mx-auto" />
+          <div className="w-9 h-[5px] rounded-full bg-[var(--border-strong)] mx-auto" />
         </div>
 
-        {sidebarHeader}
-        {filterRail}
+        {mobileChrome}
         <div
           onScroll={handleListScroll}
           className="flex-1 overflow-y-auto overscroll-contain touch-pan-y"

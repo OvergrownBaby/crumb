@@ -193,6 +193,24 @@ body {
   box-shadow: none;
 }
 
+/* Hide scrollbar but keep scrolling (used by the mobile creator-chip rail). */
+.fm-no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.fm-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide MapLibre zoom/compass buttons on mobile — pinch-zoom does the job
+ * and the buttons compete for visual space with the bottom sheet. */
+@media (max-width: 1023px) {
+  .maplibregl-ctrl-top-right,
+  .maplibregl-ctrl-top-left {
+    display: none !important;
+  }
+}
+
 /* Back-of-globe pins: MapLibre adds `maplibregl-marker-covered` to markers
  * occluded by the back of the sphere. Default lowers opacity to ~5%, which
  * makes them barely visible but still triggers hover and click. Dim further
